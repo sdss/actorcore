@@ -4,4 +4,5 @@ python/actorcore/CommandLink.py -text
 python/actorcore/CommandLinkManager.py -text
 python/actorcore/ICC.py -text
 python/actorcore/__init__.py -text
+/setup.py -text
 ups/actorcore.table -text
