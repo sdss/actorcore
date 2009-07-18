@@ -1,9 +1,9 @@
 * text=auto !eol
+python/actorcore/Actor.py -text
 python/actorcore/CmdrConnection.py -text
 python/actorcore/Command.py -text
 python/actorcore/CommandLink.py -text
 python/actorcore/CommandLinkManager.py -text
-python/actorcore/ICC.py -text
 python/actorcore/ICCExceptions.py -text
 python/actorcore/__init__.py -text
 /setup.py -text
