@@ -1,0 +1,11 @@
+* text=auto !eol
+actorcore/Actor.py -text
+actorcore/CmdrConnection.py -text
+actorcore/Command.py -text
+actorcore/CommandLink.py -text
+actorcore/CommandLinkManager.py -text
+actorcore/Commands/CoreCmd.py -text
+actorcore/Commands/__init__.py -text
+actorcore/ICC.py -text
+actorcore/ICCExceptions.py -text
+actorcore/__init__.py -text
