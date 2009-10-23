@@ -10,5 +10,7 @@ python/actorcore/Commands/__init__.py -text
 python/actorcore/ICC.py -text
 python/actorcore/ICCExceptions.py -text
 python/actorcore/__init__.py -text
+python/actorcore/utility/__init__.py -text
+python/actorcore/utility/fits.py -text
 /setup.py -text
 ups/actorcore.table -text
