@@ -12,5 +12,6 @@ python/actorcore/ICCExceptions.py -text
 python/actorcore/__init__.py -text
 python/actorcore/utility/__init__.py -text
 python/actorcore/utility/fits.py -text
+python/actorcore/utility/svn.py -text
 /setup.py -text
 ups/actorcore.table -text
