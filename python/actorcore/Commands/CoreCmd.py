@@ -8,6 +8,7 @@ import pprint
 import re
 import sys
 import ConfigParser
+import threading
 
 import opscore.protocols.validation as validation
 import opscore.protocols.keys as keys
@@ -38,10 +39,11 @@ class CoreCmd(object):
                                         )
 
         self.vocab = (
-            ('help', '[(full)] [<cmds>] [<pageWidth>] [(html)]', self.cmdHelp),
+            ('help', '[(full)] [<cmd>] [<cmds>] [<pageWidth>] [(html)]', self.cmdHelp),
             ('reload', '[<cmds>]', self.reloadCommands),
             ('reloadConfiguration', '', self.reloadConfiguration),
             ('version', '', self.version),
+            ('coreStatus', '', self.coreStatus),
             ('exitexit', '', self.exitCmd),
             ('ipdb', '', self.ipdbCmd),
             ('ipython', '', self.ipythonCmd),
@@ -55,6 +57,9 @@ class CoreCmd(object):
 
         if "cmds" in cmd.cmd.keywords:
             cmds = cmd.cmd.keywords['cmds'].values
+            fullHelp = True
+        elif "cmd" in cmd.cmd.keywords:
+            cmds = cmd.cmd.keywords['cmd'].values
             fullHelp = True
         else:
             cmds = []
@@ -105,6 +110,14 @@ class CoreCmd(object):
             cmd.finish('version=%s' % (qstr(versionString)))
         else:
             cmd.respond('version=%s' % (qstr(versionString)))
+
+    def coreStatus(self, cmd, doFinish=True):
+        """ Return internal and geeky status. """
+
+        for t in threading.enumerate():
+            cmd.inform('text="%s"' % t)
+
+        self.version(doFinish=True)
 
     def reloadCommands(self, cmd):
         """ If cmds defined, define the listed commands, otherwise reload all command sets. """
