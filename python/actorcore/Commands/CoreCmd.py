@@ -117,7 +117,7 @@ class CoreCmd(object):
         for t in threading.enumerate():
             cmd.inform('text="%s"' % t)
 
-        self.version(doFinish=True)
+        self.version(cmd,doFinish=True)
 
     def reloadCommands(self, cmd):
         """ If cmds defined, define the listed commands, otherwise reload all command sets. """
