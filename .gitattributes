@@ -1,5 +1,6 @@
 * text=auto !eol
 bin/stageManager -text
+etc/stageManager.cfg -text
 python/actorcore/Actor.py -text
 python/actorcore/CmdrConnection.py -text
 python/actorcore/Command.py -text

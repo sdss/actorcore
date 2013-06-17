@@ -20,6 +20,43 @@ EOF
     exit 1
 }
 
+check_user_host() {
+    # Check user/hostname requirements, so we're running in the right place.
+    # Pass product name to check.
+    if [ $verbose = 1 ]; then
+        echo "You are $USER@$HOSTNAME..."
+    fi
+    
+    # read the config file. Stolen from:
+    # http://stackoverflow.com/questions/4434797/read-a-config-file-in-bash-without-using-source
+    i=0
+    while read line; do
+        if [[ "$line" =~ ^[^#]*= ]]; then
+            name[i]=${line%% =*}
+            value[i]=${line#*= }
+            ((i++))
+        fi
+    done < $ACTORCORE_DIR/etc/stageManager.cfg
+    j=0
+    while [[ $1 != "${name[$j]}" && $j -le $i ]]; do
+        ((j++))
+    done
+    if (($j > $i)); then
+        echo "I don't recognize product $PRODUCT."
+        return 0
+    fi
+    
+    # translate "@" into "\n", resulting in an array of [user,host]
+    userhost=$(echo "${value[$j]}" | tr "@" "\n")
+    
+    if [[ "${user[0]}" == "$USER" && "$HOSTNAME" == "${userhost[1]}"* ]]; then
+        return 1
+    else
+        echo "$PRODUCT must be controlled by ${value[$j]}!"
+        return 0
+    fi
+}
+
 while [ ! -z $1 ]; do
     case $1 in
       -h|--help)
@@ -73,6 +110,11 @@ if [ $verbose = 1 ]; then
     echo
     echo ====================== Using $PRODUCT from $PRODUCT_DIR
     echo
+fi
+
+if check_user_host $PRODUCT; then
+    echo "User/hostname verification failed." >&2
+    exit 1
 fi
 
 # Put logs in a per-product directory.
