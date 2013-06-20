@@ -1,7 +1,11 @@
 #!/usr/bin/env bash
 
+# setup $PRODUCT can change ACTORCORE_DIR, so save it.
+CURRENT_ACTORCORE_DIR=$ACTORCORE_DIR
 LOG_DIR=$HOME/logs
 verbose=0
+overrideuser=0
+overridehost=0
 
 usage() {
     cat <<EOF >&2
@@ -15,6 +19,8 @@ Control actors.
 Options:
    -h, --help		Provide this paltry help
    -l, --log DIR	Directory to write log files
+   --overrideuser   Force allow the command to run as the current user
+   --overridehost   Force allow the command to run on the current host
    -v, --verbose	Be chatty
 EOF
     exit 1
@@ -36,25 +42,42 @@ check_user_host() {
             value[i]=${line#*= }
             ((i++))
         fi
-    done < $ACTORCORE_DIR/etc/stageManager.cfg
+    done < $CURRENT_ACTORCORE_DIR/etc/stageManager.cfg
     j=0
     while [[ $1 != "${name[$j]}" && $j -le $i ]]; do
         ((j++))
     done
     if (($j > $i)); then
-        echo "I don't recognize product $PRODUCT."
-        return 0
+        echo "I have no user/host requirements for product $PRODUCT!"
+        echo "Assuming that it is safe to run as: $USER@$HOSTNAME..."
+        echo "Please add $PRODUCT to actorcore/etc/stageManager.cfg."
+        return 1
     fi
     
     # translate "@" into "\n", resulting in an array of [user,host]
-    userhost=$(echo "${value[$j]}" | tr "@" "\n")
+    oldIFS="$IFS"
+    IFS='@' read -a userhost <<< "${value[$j]}"
+    IFS="$oldIFS"
     
-    if [[ "${user[0]}" == "$USER" && "$HOSTNAME" == "${userhost[1]}"* ]]; then
-        return 1
-    else
-        echo "$PRODUCT must be controlled by ${value[$j]}!"
-        return 0
+    ok=1
+    
+    # check hostname
+    if [[ $overridehost = 1 ]]; then
+        echo "Overriding hostname requirement."
+    elif [[ ! "$HOSTNAME" == "${userhost[1]}"* ]]; then
+        ok=0
+        echo "$PRODUCT must be run on host: ${userhost[1]}"
     fi
+    
+    # check username
+    if [[ $overrideuser = 1 ]]; then
+        echo "Overriding username requirement."
+    elif [[ ! "${userhost[0]}" = "$USER" ]]; then
+        ok=0
+        echo "$PRODUCT must be run as user: ${userhost[0]}"
+    fi
+    
+    return $ok
 }
 
 while [ ! -z $1 ]; do
@@ -70,6 +93,10 @@ while [ ! -z $1 ]; do
 		exit 1
 	    fi
 	    shift;;
+      --overrideuser)
+          overrideuser=1;;
+      --overridehost)
+          overridehost=1;;
       -v|--verbose)
 	    verbose=1;;
       -*)
@@ -113,7 +140,7 @@ if [ $verbose = 1 ]; then
 fi
 
 if check_user_host $PRODUCT; then
-    echo "User/hostname verification failed." >&2
+    echo "User/hostname verification failed!" >&2
     exit 1
 fi
 
