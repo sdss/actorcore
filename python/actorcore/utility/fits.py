@@ -1,6 +1,12 @@
-from opscore.utility.qstr import qstr
+#from opscore.utility.qstr import qstr
 import pyfits
 import numpy
+
+import os
+import threading
+import gzip
+import tempfile
+import logging
 
 def extendHeader(cmd, header, cards):
     """ Add all the cards to the header. """
@@ -278,3 +284,52 @@ def _cnvPVTVelCard(pvt):
         return pvt.getVel()
     except:
          return numpy.nan
+
+def writeFits(cmd, hdu, directory, filename, doCompress=False):
+    """
+    Write a fits hdu to a fits file: directory/filename[.gz],
+    gzip compressed with .gz extension if doCompress is True.
+    cmd is typically a Commander object, with debug, inform, warn.
+    """
+    if cmd is not None:
+        cmd.inform('text="writing FITS files for %s (%d threads)"' % (filename, threading.active_count()))
+    else:
+        logging.info("writing FITS files for %s (%d threads)" % (filename, threading.active_count()))
+    
+    # incase something horrific happens, we'll still have a semi-reasonable filename,
+    # but it won't collide with anything else.
+    outName = "XXX-%s" % (filename)
+    try:
+        # make a temp file, then move it into place once done.
+        # Note: the "ab+" mode must match the internal pyfits mode name.
+        tempFile = tempfile.NamedTemporaryFile(dir=directory,mode='ab+',
+                                               suffix='.gz', prefix=filename+'.',
+                                               delete=False)
+        tempName = tempFile.name
+        
+        if doCompress:
+            outName = os.path.join(directory, filename+'.gz')
+            tempFile = gzip.GzipFile(fileobj=tempFile, filename=filename,
+                                     mode='ab+', compresslevel=4)
+        else:
+            outName = os.path.join(directory, filename)
+
+        logging.info("Writing %s (via %s)" % (outName, tempName))
+        hdu.writeto(tempFile, checksum=True)
+        os.fsync(tempFile.fileno())
+        os.fchmod(tempFile.fileno(), 0444)
+        del tempFile
+    
+        logging.info("Renaming %s to %s" % (tempName, outName))
+        os.rename(tempName, outName)
+        logging.info("wrote %s" % (outName))
+        if cmd is not None:
+            cmd.inform('text="wrote %s"' % (outName))
+    except Exception as e:
+        if cmd is not None:
+            cmd.warn('text="FAILED to write file %s: %s"' % (outName, e))
+        else:
+            logging.warn("FAILED to write file %s: %s" % (outName, e))
+        return False
+    else:
+        return True
