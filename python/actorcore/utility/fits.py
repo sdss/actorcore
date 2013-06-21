@@ -309,7 +309,9 @@ def writeFits(cmd, hdu, directory, filename, doCompress=False, chmod=0444):
         tempName = tempFile.name
 
         if doCompress:
-            outName = os.path.join(directory, filename+'.gz')
+            outName = os.path.join(directory, filename)
+            if filename[-3:] != '.gz':
+                outName += '.gz'
             tempFile = gzip.GzipFile(fileobj=tempFile, filename=filename,
                                      mode='ab+', compresslevel=4)
         else:
