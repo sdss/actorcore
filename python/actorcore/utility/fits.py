@@ -285,11 +285,12 @@ def _cnvPVTVelCard(pvt):
     except:
          return numpy.nan
 
-def writeFits(cmd, hdu, directory, filename, doCompress=False):
+def writeFits(cmd, hdu, directory, filename, doCompress=False, chmod=0444):
     """
     Write a fits hdu to a fits file: directory/filename[.gz],
     gzip compressed with .gz extension if doCompress is True.
     cmd is typically a Commander object, with debug, inform, warn.
+    Set chmod to the mode you want the file to have (444 = all readonly).
     """
     if cmd is not None:
         cmd.inform('text="writing FITS files for %s (%d threads)"' % (filename, threading.active_count()))
@@ -306,7 +307,7 @@ def writeFits(cmd, hdu, directory, filename, doCompress=False):
                                                suffix='.gz', prefix=filename+'.',
                                                delete=False)
         tempName = tempFile.name
-        
+
         if doCompress:
             outName = os.path.join(directory, filename+'.gz')
             tempFile = gzip.GzipFile(fileobj=tempFile, filename=filename,
@@ -314,10 +315,13 @@ def writeFits(cmd, hdu, directory, filename, doCompress=False):
         else:
             outName = os.path.join(directory, filename)
 
+        # jkp NOTE: WARNING!
+        # this will likely fail to work after upgrading pyfits to >3.0
+        # jkp NOTE: WARNING!
         logging.info("Writing %s (via %s)" % (outName, tempName))
         hdu.writeto(tempFile, checksum=True)
         os.fsync(tempFile.fileno())
-        os.fchmod(tempFile.fileno(), 0444)
+        os.fchmod(tempFile.fileno(), chmod)
         del tempFile
     
         logging.info("Renaming %s to %s" % (tempName, outName))
