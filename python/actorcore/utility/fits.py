@@ -285,12 +285,13 @@ def _cnvPVTVelCard(pvt):
     except:
          return numpy.nan
 
-def writeFits(cmd, hdu, directory, filename, doCompress=False, chmod=0444):
+def writeFits(cmd, hdu, directory, filename, doCompress=False, chmod=0444, checksum=True):
     """
     Write a fits hdu to a fits file: directory/filename[.gz],
     gzip compressed with .gz extension if doCompress is True.
     cmd is typically a Commander object, with debug, inform, warn.
     Set chmod to the mode you want the file to have (444 = all readonly).
+    Set checksum to False to not compute and save the checksum.
     """
     if cmd is not None:
         cmd.inform('text="writing FITS files for %s (%d threads)"' % (filename, threading.active_count()))
@@ -321,7 +322,7 @@ def writeFits(cmd, hdu, directory, filename, doCompress=False, chmod=0444):
         # this will likely fail to work after upgrading pyfits to >3.0
         # jkp NOTE: WARNING!
         logging.info("Writing %s (via %s)" % (outName, tempName))
-        hdu.writeto(tempFile, checksum=True)
+        hdu.writeto(tempFile, checksum=checksum)
         os.fsync(tempFile.fileno())
         os.fchmod(tempFile.fileno(), chmod)
         del tempFile
@@ -336,6 +337,4 @@ def writeFits(cmd, hdu, directory, filename, doCompress=False, chmod=0444):
             cmd.warn('text="FAILED to write file %s: %s"' % (outName, e))
         else:
             logging.warn("FAILED to write file %s: %s" % (outName, e))
-        return False
-    else:
-        return True
+        raise
