@@ -1,4 +1,4 @@
-#from opscore.utility.qstr import qstr
+from opscore.utility.qstr import qstr
 import pyfits
 import numpy
 
