@@ -2,6 +2,7 @@ import logging
 import threading
 import Queue
 import ConfigParser
+import sys
 
 from twisted.internet import reactor
 from twisted.internet.protocol import ReconnectingClientFactory
@@ -11,6 +12,10 @@ import opscore.utility as opsUtils
 import opscore.actor.cmdkeydispatcher as opsDispatcher
 import opscore.actor.model as opsModel
 import opscore.actor.keyvar as opsKeyvar
+
+def encode(cmdStr):
+    """To encode unicode strings as something Twisted will take."""
+    return cmdStr.encode(sys.getdefaultencoding())
 
 class CmdrConnection(LineReceiver):
     def __init__(self, readCallback, brains, logger=None, **argv):
@@ -33,13 +38,12 @@ class CmdrConnection(LineReceiver):
 
         Args:
            c        - a Command to send
-           debug    -
-           timeout  - number of seconds to wait before failing the command.
         """
         
         with self.lock:
-            self.logger.debug("transporting command %s" % (cmdStr))
-            self.transport.write(cmdStr)
+            # encode, incase we received a unicode string.
+            self.logger.debug("transporting command %s" % (encode(cmdStr)))
+            self.transport.write(encode(cmdStr))
 
     def lineReceived(self, replyStr):
         """ Incorporate an entire reply line.
@@ -116,11 +120,12 @@ class CmdrConnector(ReconnectingClientFactory):
         
     def writeLine(self, cmdStr):
         """ Called by the dispatcher to send a command. """
-
-        self.logger.info('>> %s' % (cmdStr))
+        # encode, incase we received a unicode string.
+        self.logger.info('>> %s' % (encode(cmdStr)))
         if not self.activeConnection:
             raise RuntimeError("not connected.")
-        self.activeConnection.write(cmdStr + '\n')
+
+        self.activeConnection.write(encode(cmdStr) + '\n')
 
 class Cmdr(object):
     def __init__(self, name, actor, loggerName='cmdr'):

@@ -106,7 +106,7 @@ class CommandLink(LineReceiver):
         cmdLogger.debug('flushing queue to all outputs...')
         with self.outputQueueLock:
             while len(self.outputQueue) > 0:
-                e = self.outputQueue.pop(0)
+                e = self.outputQueue.pop(0).encode(sys.getdefaultencoding())
                 cmdLogger.debug('flushing queue line: %s' % (e[:-1]))
                 self.transport.write(e)
                 
