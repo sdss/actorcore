@@ -287,8 +287,9 @@ def _cnvPVTVelCard(pvt):
 
 def writeFits(cmd, hdu, directory, filename, doCompress=False, chmod=0444, checksum=True):
     """
-    Write a fits hdu to a fits file: directory/filename[.gz],
-    gzip compressed with .gz extension if doCompress is True.
+    Write a fits hdu to a fits file: directory/filename[.gz].
+    
+    if doCompress is True, gzip compressed with .gz extension.
     cmd is typically a Commander object, with debug, inform, warn.
     Set chmod to the mode you want the file to have (444 = all readonly).
     Set checksum to False to not compute and save the checksum.
@@ -301,11 +302,15 @@ def writeFits(cmd, hdu, directory, filename, doCompress=False, chmod=0444, check
     # incase something horrific happens, we'll still have a semi-reasonable filename,
     # but it won't collide with anything else.
     outName = "XXX-%s" % (filename)
+    suffix = '.gz' if doCompress else ''
     try:
         # make a temp file, then move it into place once done.
         # Note: the "ab+" mode must match the internal pyfits mode name.
-        tempFile = tempfile.NamedTemporaryFile(dir=directory,mode='ab+',
-                                               suffix='.gz', prefix=filename+'.',
+        # jkp NOTE: WARNING!
+        # mode='ab' isn't what we really want, but 'ab+' doesn't work in
+        # pyfits 3.1.2 giving IOError: read() on write-only GzipFile object.
+        tempFile = tempfile.NamedTemporaryFile(dir=directory,mode='ab',
+                                               suffix=suffix,prefix=filename+'.',
                                                delete=False)
         tempName = tempFile.name
 
@@ -313,15 +318,15 @@ def writeFits(cmd, hdu, directory, filename, doCompress=False, chmod=0444, check
             outName = os.path.join(directory, filename)
             if filename[-3:] != '.gz':
                 outName += '.gz'
+            # jkp NOTE: WARNING!
+            # mode='ab' isn't what we really want, but 'ab+' doesn't work in
+            # pyfits 3.1.2 giving IOError: read() on write-only GzipFile object.
             tempFile = gzip.GzipFile(fileobj=tempFile, filename=filename,
-                                     mode='ab+', compresslevel=4)
+                                     mode='ab', compresslevel=4)
         else:
             outName = os.path.join(directory, filename)
-
-        # jkp NOTE: WARNING!
-        # this will likely fail to work after upgrading pyfits to >3.0
-        # jkp NOTE: WARNING!
-        logging.info("Writing %s (via %s)" % (outName, tempName))
+        
+        logging.info("Writing %s (via %s)" % (outName, tempName))        
         hdu.writeto(tempFile, checksum=checksum)
         os.fsync(tempFile.fileno())
         os.fchmod(tempFile.fileno(), chmod)
