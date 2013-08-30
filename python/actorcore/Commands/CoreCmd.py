@@ -54,7 +54,9 @@ class CoreCmd(object):
 
         Also allows generating an html file.
         """
-
+        # First, report the actor version number.
+        self.version(cmd,doFinish=False)
+        
         if "cmds" in cmd.cmd.keywords:
             cmds = cmd.cmd.keywords['cmds'].values
             fullHelp = True
