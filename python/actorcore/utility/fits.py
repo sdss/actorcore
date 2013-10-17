@@ -285,31 +285,43 @@ def _cnvPVTVelCard(pvt):
     except:
          return numpy.nan
 
-def writeFits(cmd, hdu, directory, filename, doCompress=False, chmod=0444, checksum=True):
+def writeFits(cmd, hdu, directory, filename, doCompress=False, chmod=0444,
+              checksum=True, caller=''):
     """
     Write a fits hdu to a fits file: directory/filename[.gz].
     
-    if doCompress is True, gzip compressed with .gz extension.
-    cmd is typically a Commander object, with debug, inform, warn.
-    Set chmod to the mode you want the file to have (444 = all readonly).
-    Set checksum to False to not compute and save the checksum.
-    """
-    if cmd is not None:
-        cmd.inform('text="writing FITS files for %s (%d threads)"' % (filename, threading.active_count()))
-    else:
-        logging.info("writing FITS files for %s (%d threads)" % (filename, threading.active_count()))
+    Uses a named temporary file to write a fits file (potentially gzipped),
+    (mostly) guaranteeing that the expected file name won't exist unless it
+    really did get written.
+        
+    Args:
+        cmd: provides debug, inform, warn, for logging (usually actorcore.Command instance).
+        hdu: the fits HDU to write.
+        directory: the directory (sans file) to write to.
+        filename: the filename (sans directory) to write to.
+        doCompress: gzip compressed with .gz extension.
+        chmod: the mode you want the file to have (444 = all readonly).
+        checksum: compute and save the checksum inside the file.
+        caller: name of the calling object, for logging.
     
-    # incase something horrific happens, we'll still have a semi-reasonable filename,
-    # but it won't collide with anything else.
+    Returns:
+        The full name of the file that was eventually written.
+    """
+    
     outName = "XXX-%s" % (filename)
     suffix = '.gz' if doCompress else ''
     try:
-        # make a temp file, then move it into place once done.
-        # Note: the "ab+" mode must match the internal pyfits mode name.
-        # jkp NOTE: WARNING!
-        # mode='ab' isn't what we really want, but 'ab+' doesn't work in
-        # pyfits 3.1.2 giving IOError: read() on write-only GzipFile object.
-        tempFile = tempfile.NamedTemporaryFile(dir=directory,mode='ab',
+        if cmd is not None:
+            cmd.inform('text="writing %sFITS files for %s (%d threads)"' % (caller, filename, threading.active_count()))
+        else:
+            logging.info("writing %sFITS files for %s (%d threads)" % (caller, filename, threading.active_count()))
+        
+        # Make a temp file, then move it into place once done.
+        # If something horrific happens, we'll still have a semi-reasonable
+        # filename, but it won't collide with anything else.
+        # We can us mode 'wb' here, because we close the file after reading, 
+        # and the tempfile means it has a unique name, and will not already exist.
+        tempFile = tempfile.NamedTemporaryFile(dir=directory,mode='wb',
                                                suffix=suffix,prefix=filename+'.',
                                                delete=False)
         tempName = tempFile.name
@@ -318,16 +330,14 @@ def writeFits(cmd, hdu, directory, filename, doCompress=False, chmod=0444, check
             outName = os.path.join(directory, filename)
             if filename[-3:] != '.gz':
                 outName += '.gz'
-            # jkp NOTE: WARNING!
-            # mode='ab' isn't what we really want, but 'ab+' doesn't work in
-            # pyfits 3.1.2 giving IOError: read() on write-only GzipFile object.
             tempFile = gzip.GzipFile(fileobj=tempFile, filename=filename,
-                                     mode='ab', compresslevel=4)
+                                     mode='wb', compresslevel=4)
         else:
             outName = os.path.join(directory, filename)
         
         logging.info("Writing %s (via %s)" % (outName, tempName))        
         hdu.writeto(tempFile, checksum=checksum)
+        tempFile.flush()
         os.fsync(tempFile.fileno())
         os.fchmod(tempFile.fileno(), chmod)
         del tempFile
@@ -339,7 +349,9 @@ def writeFits(cmd, hdu, directory, filename, doCompress=False, chmod=0444, check
             cmd.inform('text="wrote %s"' % (outName))
     except Exception as e:
         if cmd is not None:
-            cmd.warn('text="FAILED to write file %s: %s"' % (outName, e))
+            cmd.warn('text="FAILED to write %sfile %s: %s"' % (caller, outName, e))
         else:
-            logging.warn("FAILED to write file %s: %s" % (outName, e))
+            logging.warn("FAILED to write %sfile %s: %s" % (caller, outName, e))
         raise
+    else:
+        return outName
