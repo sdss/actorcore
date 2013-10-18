@@ -310,6 +310,8 @@ def writeFits(cmd, hdu, directory, filename, doCompress=False, chmod=0444,
     
     outName = "XXX-%s" % (filename)
     suffix = '.gz' if doCompress else ''
+    # to help with spacing out later string formatting:
+    if caller != '': caller += ' '
     try:
         if cmd is not None:
             cmd.inform('text="writing %sFITS files for %s (%d threads)"' % (caller, filename, threading.active_count()))
