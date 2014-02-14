@@ -26,7 +26,6 @@ othersOff = {'whtLampCommandedOn':[False],'uvLampCommandedOn':[False],}
 semaphoreGood = {'semaphoreOwner':['None']}
 semaphoreBad = {'semaphoreOwner':['SomeEvilGuy']}
 mcpState = {}
-# TBD: there's gotta be a better way to combine dicts than this!
 mcpState['flats'] = merge_dicts(ffsClosed,arcOff,flatOn)
 mcpState['arcs'] = merge_dicts(ffsClosed,arcOn,flatOff)
 mcpState['science'] = merge_dicts(ffsOpen,arcOff,flatOff)
@@ -47,10 +46,9 @@ shutterUnknown = {'shutterLimitSwitch':['false','false']}
 notReading = {'utrReadState':['','Done',0,0]}
 reading = {'utrReadState':['object','Reading',1,2]}
 apogeeState = {}
-# TBD: there's gotta be a better way to combine dicts than this!
-apogeeState['A_closed'] = dict(ditherA.items() + shutterClosed.items() + notReading.items())
-apogeeState['B_open'] = dict(ditherB.items() + shutterOpen.items() + notReading.items())
-apogeeState['unknown'] = dict(ditherUnknown.items() + shutterUnknown.items() + notReading.items())
+apogeeState['A_closed'] = merge_dicts(ditherA, shutterClosed, notReading)
+apogeeState['B_open'] = merge_dicts(ditherB, shutterOpen, notReading)
+apogeeState['unknown'] = merge_dicts(ditherUnknown, shutterUnknown, notReading)
 
 
 # TCC state setup
@@ -60,7 +58,23 @@ tccBase = {'axisBadStatusMask':['0x00057800'],
 axisStat = {'azStat':[0]*4, 'altStat':[0]*4, 'rotStat':[0]*4}
 tccState = {}
 # TBD: there's gotta be a better way to combine dicts than this!
-tccState['stopped'] = dict(tccBase.items() + axisStat.items())
+tccState['stopped'] = merge_dicts(tccBase, axisStat)
+
+
+# guider state setup
+cartLoaded = {'cartridgeLoaded':[1,1000,'A',54321,0]}
+noDecenter = {'decenter':[0,'disabled',0,0,0,0,0]}
+yesDecenter = {'decenter':[0,'enabled',0,0,0,0,0]}
+# The below is stolen from guiderActor.Commands.GuiderCommand
+mangaDithers = {'N':(-0.417, +0.721, 0.0),
+                'S':(-0.417, -0.721, 0.0),
+                'E':(+0.833, 0.000, 0.0),
+                'C':(0.0,0.0,0.0)}
+mangaNDecenter = {'decenter':[0,'enabled',-0.417,+0.721,0,0,0]}
+mangaSDecenter = {'decenter':[0,'enabled',-0.417,-0.721,0,0,0]}
+mangaEDecenter = {'decenter':[0,'enabled',+0.833,0,0,0,0]}
+guiderState = {}
+guiderState['cartLoaded'] = merge_dicts(cartLoaded,noDecenter)
 
 class Cmd(object):
     """
@@ -113,18 +127,22 @@ class Cmd(object):
     
     def call(self,*args,**kwargs):
         """Pretend to complete command successfully."""
-        baseText = str(*args)
-        for k,v in sorted(kwargs.items()):
-            baseText = ' '.join((baseText,'%s=%s'%(k,v)))
+        if args:
+            # for handling FakeThread stuff.
+            text = str(*args)
+            self._msg(text,'c')
+            self.didFail = False
+            return
+        cmdStr = kwargs.get('cmdStr')
+        timeLim = kwargs.get('timeLim',-1)
         actor = kwargs.get('actor',None)
         caller = kwargs.get('forUserCmd',None)
+        baseText = ' '.join((str(actor), '%s [%s]'%(cmdStr,timeLim)))
         if caller is not None and not isinstance(caller,Cmd):
             raise TypeError("You can't call %s with forUserCmd=%s."%(baseText,caller))
         try:
-            cmdStr = kwargs.get('cmdStr')
             cmd = self.cParser.parse(cmdStr)
             cmdTxt = ' '.join((actor,cmd.string))
-            timeLim = kwargs.get('timeLim',-1)
             other = '<<timeLim=%.1f>>'%(timeLim)
             text = ' '.join((cmdTxt,other))
         except (parser.ParseError, AttributeError) as e:
@@ -134,8 +152,10 @@ class Cmd(object):
         # Handle commands where we have to set a new state.
         if actor == 'apogee':
             self.apogee_succeed(*args,**kwargs)
-        if actor == 'mcp':
+        elif actor == 'mcp':
             self.mcp_succeed(*args,**kwargs)
+        elif actor == 'guider':
+            self.guider_succeed(*args,**kwargs)
         else:
             self.didFail = False
         return self
@@ -209,8 +229,7 @@ class Cmd(object):
             self.didFail = False
             global globalModels
             globalModels['mcp'].keyVarDict[key].set(newVal)
-            
-    
+                
     def _do_lamp(self,lamp,state):
         """Change lamp to new state"""
         key = lamp.lower()+'Lamp'
@@ -232,7 +251,53 @@ class Cmd(object):
         else:
             raise ValueError('Unknown ffs state: %s'%state)
         return key,newVal
+    
+    def guider_succeed(self,*args,**kwargs):
+        """Handle mcp commands as successes, and update appropriate keywords."""
+        cmdStr = kwargs.get('cmdStr')
+        try:
+            cmd = self.cParser.parse(cmdStr)
+            if cmd.name == 'mangaDither':
+                key,newVal = self._get_mangaDither(cmd.keywords)
+            elif cmd.name == 'decenter':
+                key,newVal = self._get_decenter(cmd.keywords)
+            #elif cmd.name == 'expose':
+            #    key,newVal = self._get_expose(cmd.keywords)
+            else:
+                raise ValueError("I don't know what to do with this: %s"%cmdStr)
+        except ValueError as e:
+            print "!!Error: %s"%e
+            self.didFail = True
+        else:
+            self.didFail = False
+            global globalModels
+            globalModels['guider'].keyVarDict[key].set(newVal[key])
         
+    def _get_mangaDither(self,keywords):
+        """Set a new mangaDither position."""
+        key = 'decenter'
+        pos = keywords['ditherPos'].values[0]
+        if pos == 'N':
+            newVal = mangaNDecenter
+        elif pos == 'S':
+            newVal = mangaSDecenter
+        elif pos == 'E':
+            newVal = mangaEDecenter
+        else:
+            raise ValueError("I don't know what to do with this mangaDither: %s"%keywords)
+        return key,newVal
+        
+    def _get_decenter(self,keywords):
+        """Change decenter to new state"""
+        key = 'decenter'
+        if 'on' in keywords:
+            newVal = yesDecenter
+        elif 'off' in keywords:
+            newVal = noDecenter
+        else:
+            raise ValueError('Unknown decenter state: %s'%(state))
+        return key,newVal
+    
 
 class Model(object):
     """quick replacement for Model in opscore/actorcore."""
