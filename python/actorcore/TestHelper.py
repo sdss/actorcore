@@ -219,6 +219,10 @@ class Cmd(object):
             cmdStr = kwargs.get('cmdStr')
             if 'ff.' in cmdStr:
                 key,newVal = self._do_lamp('ff',cmdStr.split('.')[-1])
+            if 'ne.' in cmdStr:
+                key,newVal = self._do_lamp('ff',cmdStr.split('.')[-1])
+            if 'hgcd.' in cmdStr:
+                key,newVal = self._do_lamp('ff',cmdStr.split('.')[-1])
             elif 'ffs.' in cmdStr:
                 key,newVal = self._do_ffs(cmdStr.split('.')[-1])
             else:
