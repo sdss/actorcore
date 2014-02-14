@@ -1,6 +1,7 @@
 """
 Help for writing test cases that need a Cmdr, Model, Actor, etc.
 """
+import sys
 
 from actorcore import Actor
 from opscore.actor import keyvar
@@ -10,6 +11,10 @@ from opscore.protocols import keys,types,parser
 global globalModels
 globalModels = {}
 
+def merge_dicts(*args):
+    """Merge many dicts and return the result."""
+    return {k:v for d in args for k,v in d.iteritems()}
+
 # MCP state setup
 ffsClosed = {'ffsStatus':['01']*8}
 ffsOpen = {'ffsStatus':['10']*8}
@@ -18,16 +23,18 @@ arcOff = {'hgCdLamp':[0]*4, 'neLamp':[0]*4}
 flatOn = {'ffLamp':[1]*4}
 flatOff = {'ffLamp':[0]*4}
 othersOff = {'whtLampCommandedOn':[False],'uvLampCommandedOn':[False],}
-
+semaphoreGood = {'semaphoreOwner':['None']}
+semaphoreBad = {'semaphoreOwner':['SomeEvilGuy']}
 mcpState = {}
 # TBD: there's gotta be a better way to combine dicts than this!
-mcpState['flats'] = dict(ffsClosed.items() + arcOff.items() + flatOn.items())
-mcpState['arcs'] = dict(ffsClosed.items() + arcOn.items() + flatOff.items())
-mcpState['science'] = dict(ffsOpen.items() + arcOff.items() + flatOff.items())
-mcpState['all_off'] = dict(ffsClosed.items() + arcOff.items() + flatOff.items())
+mcpState['flats'] = merge_dicts(ffsClosed,arcOff,flatOn)
+mcpState['arcs'] = merge_dicts(ffsClosed,arcOn,flatOff)
+mcpState['science'] = merge_dicts(ffsOpen,arcOff,flatOff)
+mcpState['all_off'] = merge_dicts(ffsClosed,arcOff,flatOff)
 # these lamps should always be off, so set them as such...
 for n in mcpState:
     mcpState[n].update(othersOff)
+    mcpState[n].update(semaphoreGood)
 
 
 # APOGEE state setup
@@ -45,6 +52,15 @@ apogeeState['A_closed'] = dict(ditherA.items() + shutterClosed.items() + notRead
 apogeeState['B_open'] = dict(ditherB.items() + shutterOpen.items() + notReading.items())
 apogeeState['unknown'] = dict(ditherUnknown.items() + shutterUnknown.items() + notReading.items())
 
+
+# TCC state setup
+tccBase = {'axisBadStatusMask':['0x00057800'], 
+           'moveItems':[''], 'inst':['guider'], 
+           'slewEnd':'', 'tccStatus':['','']}
+axisStat = {'azStat':[0]*4, 'altStat':[0]*4, 'rotStat':[0]*4}
+tccState = {}
+# TBD: there's gotta be a better way to combine dicts than this!
+tccState['stopped'] = dict(tccBase.items() + axisStat.items())
 
 class Cmd(object):
     """
@@ -64,7 +80,9 @@ class Cmd(object):
         
     def _msg(self,txt,level):
         if self.verbose:
-            print level,txt
+            # because "print" isn't threadsafe in py27
+            sys.stderr.write('%s %s\n'%(level,txt))
+            sys.stderr.flush()
         self.levels += level
         self.messages.append(txt)
     def _checkFinished(self):
@@ -82,7 +100,7 @@ class Cmd(object):
     def error(self,txt):
         self._msg(txt,'e')
     def fail(self,txt):
-        self._checkFinished(self)
+        self._checkFinished()
         self._msg(txt,'f')
         self.finished = True
     
@@ -95,24 +113,29 @@ class Cmd(object):
     
     def call(self,*args,**kwargs):
         """Pretend to complete command successfully."""
+        baseText = str(*args)
+        for k,v in sorted(kwargs.items()):
+            baseText = ' '.join((baseText,'%s=%s'%(k,v)))
         actor = kwargs.get('actor',None)
+        caller = kwargs.get('forUserCmd',None)
+        if caller is not None and not isinstance(caller,Cmd):
+            raise TypeError("You can't call %s with forUserCmd=%s."%(baseText,caller))
         try:
             cmdStr = kwargs.get('cmdStr')
             cmd = self.cParser.parse(cmdStr)
-            cmdTxt = ' '.join((actor,cmd.name,cmd.keywords.canonical(' ')))
-            caller = kwargs.get('forUserCmd',None)
+            cmdTxt = ' '.join((actor,cmd.string))
             timeLim = kwargs.get('timeLim',-1)
-            other = '<<caller=%s timeLim=%.1f>>'%(caller,timeLim)
+            other = '<<timeLim=%.1f>>'%(timeLim)
             text = ' '.join((cmdTxt,other))
-        except parser.ParseError:
-            text = str(*args)
-            for k,v in sorted(kwargs.items()):
-                text = ' '.join((text,'%s=%s'%(k,v)))
+        except (parser.ParseError, AttributeError) as e:
+            text = baseText
         self._msg(text,'c')
         
         # Handle commands where we have to set a new state.
         if actor == 'apogee':
             self.apogee_succeed(*args,**kwargs)
+        if actor == 'mcp':
+            self.mcp_succeed(*args,**kwargs)
         else:
             self.didFail = False
         return self
@@ -158,7 +181,7 @@ class Cmd(object):
         elif 'close' in keywords:
             newVal = shutterClosed
         else:
-            raise ValueError('Unknown shuter position: %s'%keywords)
+            raise ValueError('Unknown shutter position: %s'%keywords)
         return key,newVal
     
     def _get_expose(self,keywords):
@@ -168,7 +191,48 @@ class Cmd(object):
         nReads = float(time)/10.
         name = keywords['object'].values[0]
         newVal = {key:(name,'Reading',1,nReads)}
-        return key,newVal 
+        return key,newVal
+    
+    def mcp_succeed(self,*args,**kwargs):
+        """Handle mcp commands as successes, and update appropriate keywords."""
+        try:
+            cmdStr = kwargs.get('cmdStr')
+            if 'ff.' in cmdStr:
+                key,newVal = self._do_lamp('ff',cmdStr.split('.')[-1])
+            elif 'ffs.' in cmdStr:
+                key,newVal = self._do_ffs(cmdStr.split('.')[-1])
+            else:
+                raise ValueError('Unknown mcp command: %s'%cmdStr)
+        except ValueError:
+            self.didFail = True
+        else:
+            self.didFail = False
+            global globalModels
+            globalModels['mcp'].keyVarDict[key].set(newVal)
+            
+    
+    def _do_lamp(self,lamp,state):
+        """Change lamp to new state"""
+        key = lamp.lower()+'Lamp'
+        if state == 'on':
+            newVal = [1]*4
+        elif state == 'off':
+            newVal = [1]*4
+        else:
+            raise ValueError('Unknown %sLamp state: %s'%(lamp,state))
+        return key,newVal
+    
+    def _do_ffs(self,state):
+        """Change ffs screens to new state"""
+        key = 'ffsStatus'
+        if state == 'close':
+            newVal = ffsClosed['ffsStatus']
+        elif state == 'open':
+            newVal = ffsOpen['ffsStatus']
+        else:
+            raise ValueError('Unknown ffs state: %s'%state)
+        return key,newVal
+        
 
 class Model(object):
     """quick replacement for Model in opscore/actorcore."""
