@@ -137,7 +137,7 @@ class Cmd(object):
         timeLim = kwargs.get('timeLim',-1)
         actor = kwargs.get('actor',None)
         caller = kwargs.get('forUserCmd',None)
-        baseText = ' '.join((str(actor), '%s [%s]'%(cmdStr,timeLim)))
+        baseText = ' '.join((str(actor), '%s <<timeLim=%s>>'%(cmdStr,timeLim)))
         if caller is not None and not isinstance(caller,Cmd):
             raise TypeError("You can't call %s with forUserCmd=%s."%(baseText,caller))
         try:
