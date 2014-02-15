@@ -5,7 +5,7 @@ import sys
 
 from actorcore import Actor
 from opscore.actor import keyvar
-from opscore.protocols import keys,types,parser
+from opscore.protocols import keys,types,parser,messages
 
 # To allow fake-setting/handling of the various actor models.
 global globalModels
@@ -65,16 +65,20 @@ tccState['stopped'] = merge_dicts(tccBase, axisStat)
 cartLoaded = {'cartridgeLoaded':[1,1000,'A',54321,0]}
 noDecenter = {'decenter':[0,'disabled',0,0,0,0,0]}
 yesDecenter = {'decenter':[0,'enabled',0,0,0,0,0]}
-# The below is stolen from guiderActor.Commands.GuiderCommand
+guiderOn = {'guideState':['on']}
+guiderOff = {'guideState':['off']}
+# The below was stolen from guiderActor.Commands.GuiderCommand
 mangaDithers = {'N':(-0.417, +0.721, 0.0),
                 'S':(-0.417, -0.721, 0.0),
                 'E':(+0.833, 0.000, 0.0),
                 'C':(0.0,0.0,0.0)}
-mangaNDecenter = {'decenter':[0,'enabled',-0.417,+0.721,0,0,0]}
-mangaSDecenter = {'decenter':[0,'enabled',-0.417,-0.721,0,0,0]}
-mangaEDecenter = {'decenter':[0,'enabled',+0.833,0,0,0,0]}
+mangaN = {'mangaDither':['N'],'decenter':[0,'enabled',-0.417,+0.721,0,0,0]}
+mangaS = {'mangaDither':['S'],'decenter':[0,'enabled',-0.417,-0.721,0,0,0]}
+mangaE = {'mangaDither':['E'],'decenter':[0,'enabled',+0.833,0,0,0,0]}
+mangaC = {'mangaDither':['C'],'decenter':[0,'disabled',0,0,0,0,0]}
 guiderState = {}
-guiderState['cartLoaded'] = merge_dicts(cartLoaded,noDecenter)
+guiderState['cartLoaded'] = merge_dicts(guiderOff,cartLoaded,mangaC)
+guiderState['guiderOn'] = merge_dicts(guiderOff,cartLoaded,mangaC)
 
 class Cmd(object):
     """
@@ -89,9 +93,17 @@ class Cmd(object):
         self.finished = False
         self.nFinished = 0
         self.cParser = parser.CommandParser()
+        self.replyList = []
     def __repr__(self):
         return 'TestHelperCmdr-%s'%('finished' if self.finished else 'running')
-        
+    # Copied from opscore.actor.keyvar.py:CmdVar
+    @property
+    def lastReply(self):
+        """Return the last reply object, or None if no replies seen"""
+        if not self.replyList:
+            return None
+        return self.replyList[-1]
+
     def _msg(self,txt,level):
         if self.verbose:
             # because "print" isn't threadsafe in py27
@@ -174,7 +186,7 @@ class Cmd(object):
             else:
                 raise ValueError("I don't know what to do with this: %s"%cmdStr)
         except ValueError as e:
-            print "!!Error: %s"%e
+            print 'ValueError in apogee_succeed:',e
             self.didFail = True
         else:
             self.didFail = False
@@ -219,15 +231,23 @@ class Cmd(object):
             cmdStr = kwargs.get('cmdStr')
             if 'ff.' in cmdStr:
                 key,newVal = self._do_lamp('ff',cmdStr.split('.')[-1])
-            if 'ne.' in cmdStr:
-                key,newVal = self._do_lamp('ff',cmdStr.split('.')[-1])
-            if 'hgcd.' in cmdStr:
-                key,newVal = self._do_lamp('ff',cmdStr.split('.')[-1])
+            elif 'ne.' in cmdStr:
+                key,newVal = self._do_lamp('ne',cmdStr.split('.')[-1])
+            elif 'hgcd.' in cmdStr:
+                key,newVal = self._do_lamp('hgCd',cmdStr.split('.')[-1])
+            elif 'wht.' in cmdStr:
+                # these two lamps are always off. So do nothing.
+                self.didFail = False
+                return
+            elif 'uv.' in cmdStr:
+                self.didFail = False
+                return
             elif 'ffs.' in cmdStr:
                 key,newVal = self._do_ffs(cmdStr.split('.')[-1])
             else:
                 raise ValueError('Unknown mcp command: %s'%cmdStr)
-        except ValueError:
+        except ValueError as e:
+            print 'ValueError in mcp_succeed:',e
             self.didFail = True
         else:
             self.didFail = False
@@ -236,11 +256,11 @@ class Cmd(object):
                 
     def _do_lamp(self,lamp,state):
         """Change lamp to new state"""
-        key = lamp.lower()+'Lamp'
+        key = lamp+'Lamp'
         if state == 'on':
             newVal = [1]*4
         elif state == 'off':
-            newVal = [1]*4
+            newVal = [0]*4
         else:
             raise ValueError('Unknown %sLamp state: %s'%(lamp,state))
         return key,newVal
@@ -265,12 +285,16 @@ class Cmd(object):
                 key,newVal = self._get_mangaDither(cmd.keywords)
             elif cmd.name == 'decenter':
                 key,newVal = self._get_decenter(cmd.keywords)
-            #elif cmd.name == 'expose':
-            #    key,newVal = self._get_expose(cmd.keywords)
+            elif cmd.name == 'on':
+                # This keeps guiderThread happy:
+                self.replyList.append(messages.Reply('',[messages.Keyword('Timeout')]))
+                key,newVal = 'guideState',guiderOn
+            elif cmd.name == 'off':
+                key,newVal = 'guideState',guiderOff
             else:
                 raise ValueError("I don't know what to do with this: %s"%cmdStr)
         except ValueError as e:
-            print "!!Error: %s"%e
+            print 'ValueError in guider_succeed:',e
             self.didFail = True
         else:
             self.didFail = False
@@ -282,13 +306,15 @@ class Cmd(object):
         key = 'decenter'
         pos = keywords['ditherPos'].values[0]
         if pos == 'N':
-            newVal = mangaNDecenter
+            newVal = mangaN
         elif pos == 'S':
-            newVal = mangaSDecenter
+            newVal = mangaS
         elif pos == 'E':
-            newVal = mangaEDecenter
+            newVal = mangaE
         else:
             raise ValueError("I don't know what to do with this mangaDither: %s"%keywords)
+        global globalModels
+        globalModels['guider'].keyVarDict['mangaDither'].set(newVal['mangaDither'])
         return key,newVal
         
     def _get_decenter(self,keywords):
