@@ -22,7 +22,7 @@ arcOn = {'hgCdLamp':[1]*4, 'neLamp':[1]*4}
 arcOff = {'hgCdLamp':[0]*4, 'neLamp':[0]*4}
 flatOn = {'ffLamp':[1]*4}
 flatOff = {'ffLamp':[0]*4}
-othersOff = {'whtLampCommandedOn':[False],'uvLampCommandedOn':[False],}
+othersOff = {'whtLampCommandedOn':[0],'uvLampCommandedOn':[0],}
 semaphoreGood = {'semaphoreOwner':['None']}
 semaphoreBad = {'semaphoreOwner':['SomeEvilGuy']}
 mcpState = {}
@@ -79,6 +79,7 @@ mangaC = {'mangaDither':['C'],'decenter':[0,'disabled',0,0,0,0,0]}
 guiderState = {}
 guiderState['cartLoaded'] = merge_dicts(guiderOff,cartLoaded,mangaC)
 guiderState['guiderOn'] = merge_dicts(guiderOff,cartLoaded,mangaC)
+guiderState['guiderOnDecenter'] = merge_dicts(guiderOff,cartLoaded,mangaN)
 
 class Cmd(object):
     """
@@ -94,6 +95,7 @@ class Cmd(object):
         self.nFinished = 0
         self.cParser = parser.CommandParser()
         self.replyList = []
+        self.calls = []
     def __repr__(self):
         return 'TestHelperCmdr-%s'%('finished' if self.finished else 'running')
     # Copied from opscore.actor.keyvar.py:CmdVar
@@ -149,7 +151,7 @@ class Cmd(object):
         timeLim = kwargs.get('timeLim',-1)
         actor = kwargs.get('actor',None)
         caller = kwargs.get('forUserCmd',None)
-        baseText = ' '.join((str(actor), '%s <<timeLim=%s>>'%(cmdStr,timeLim)))
+        baseText = ' '.join((str(actor), cmdStr, '<<timeLim=%s>>'%(timeLim)))
         if caller is not None and not isinstance(caller,Cmd):
             raise TypeError("You can't call %s with forUserCmd=%s."%(baseText,caller))
         try:
@@ -160,6 +162,7 @@ class Cmd(object):
         except (parser.ParseError, AttributeError) as e:
             text = baseText
         self._msg(text,'c')
+        self.calls.append(text.split('<<')[0].strip())
         
         # Handle commands where we have to set a new state.
         if actor == 'apogee':
@@ -291,6 +294,10 @@ class Cmd(object):
                 key,newVal = 'guideState',guiderOn
             elif cmd.name == 'off':
                 key,newVal = 'guideState',guiderOff
+            elif cmd.name == 'flat' or cmd.name in ("axes", "scale", "focus"):
+                # just succeed on a guider flat or axes clear.
+                self.didFail = False
+                return
             else:
                 raise ValueError("I don't know what to do with this: %s"%cmdStr)
         except ValueError as e:
