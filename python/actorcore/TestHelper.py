@@ -96,8 +96,14 @@ class Cmd(object):
         self.cParser = parser.CommandParser()
         self.replyList = []
         self.calls = []
+        # Always fail when failCmd is called
+        self.failOn = None
+        # to keep track of whether BOSS hasn't been readout.
+        self.bossNeedsReadout = False
+        
     def __repr__(self):
         return 'TestHelperCmdr-%s'%('finished' if self.finished else 'running')
+    
     # Copied from opscore.actor.keyvar.py:CmdVar
     @property
     def lastReply(self):
@@ -141,12 +147,18 @@ class Cmd(object):
     
     def call(self,*args,**kwargs):
         """Pretend to complete command successfully."""
+        
+        # for handling FakeThread stuff.
         if args:
-            # for handling FakeThread stuff.
-            text = str(*args)
+            text = str(*args).strip()
             self._msg(text,'c')
-            self.didFail = False
-            return
+            if self.failOn is not None and command == self.failOn:
+                self.didFail = True
+            else:
+                self.didFail = False
+            return self
+        
+        # for handling "real" commands
         cmdStr = kwargs.get('cmdStr')
         timeLim = kwargs.get('timeLim',-1)
         actor = kwargs.get('actor',None)
@@ -162,11 +174,17 @@ class Cmd(object):
         except (parser.ParseError, AttributeError) as e:
             text = baseText
         self._msg(text,'c')
-        self.calls.append(text.split('<<')[0].strip())
+        command = text.split('<<')[0].strip()
+        self.calls.append(command)
+        if self.failOn is not None and command == self.failOn:
+            self.didFail = True
+            return self
         
         # Handle commands where we have to set a new state.
         if actor == 'apogee':
             self.apogee_succeed(*args,**kwargs)
+        elif actor == 'boss':
+            self.boss_succeed(*args,**kwargs)
         elif actor == 'mcp':
             self.mcp_succeed(*args,**kwargs)
         elif actor == 'guider':
@@ -227,6 +245,29 @@ class Cmd(object):
         name = keywords['object'].values[0]
         newVal = {key:(name,'Reading',1,nReads)}
         return key,newVal
+    
+    def boss_succeed(self,*args,**kwargs):
+        """Handle boss commands as successes, and remember if we need to readout."""
+        cmdStr = kwargs.get('cmdStr')
+        cmd = self.cParser.parse(cmdStr)
+        if cmd.name == 'exposure':
+            readout = 'readout' in cmd.keywords
+            noreadout = 'noreadout' in cmd.keywords
+            if readout:
+                self.bossNeedsReadout = False
+                self.didFail = False
+            elif not readout and self.bossNeedsReadout:
+                self.didFail = True
+                print "Error! Cannot take BOSS exposure: need to readout previous one!"
+            elif noreadout:
+                self.bossNeedsReadout = True
+                self.didFail = False
+            else:
+                self.bossNeedsReadout = False
+                self.didFail = False
+        else:
+            # any other boss commands just succeed.
+            self.didFail = False
     
     def mcp_succeed(self,*args,**kwargs):
         """Handle mcp commands as successes, and update appropriate keywords."""
