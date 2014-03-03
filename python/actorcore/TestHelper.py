@@ -25,11 +25,15 @@ flatOff = {'ffLamp':[0]*4}
 othersOff = {'whtLampCommandedOn':[0],'uvLampCommandedOn':[0],}
 semaphoreGood = {'semaphoreOwner':['None']}
 semaphoreBad = {'semaphoreOwner':['SomeEvilGuy']}
+gangBad = {'apogeeGang':[1]}
+gangCart = {'apogeeGang':[2]}
+gangPodium = {'apogeeGang':[4]}
+gang1m = {'apogeeGang':[36]}
 mcpState = {}
-mcpState['flats'] = merge_dicts(ffsClosed,arcOff,flatOn)
-mcpState['arcs'] = merge_dicts(ffsClosed,arcOn,flatOff)
-mcpState['science'] = merge_dicts(ffsOpen,arcOff,flatOff)
-mcpState['all_off'] = merge_dicts(ffsClosed,arcOff,flatOff)
+mcpState['flats'] = merge_dicts(ffsClosed,arcOff,flatOn,gangPodium)
+mcpState['arcs'] = merge_dicts(ffsClosed,arcOn,flatOff,gangPodium)
+mcpState['science'] = merge_dicts(ffsOpen,arcOff,flatOff,gangCart)
+mcpState['all_off'] = merge_dicts(ffsClosed,arcOff,flatOff,gangPodium)
 # these lamps should always be off, so set them as such...
 for n in mcpState:
     mcpState[n].update(othersOff)
@@ -56,9 +60,12 @@ tccBase = {'axisBadStatusMask':['0x00057800'],
            'moveItems':[''], 'inst':['guider'], 
            'slewEnd':'', 'tccStatus':['','']}
 axisStat = {'azStat':[0]*4, 'altStat':[0]*4, 'rotStat':[0]*4}
+atStow = {'axePos':[121,15,0]}
+atGangChange = {'axePos':[121,45,0]}
+atInstChange = {'axePos':[0,90,0]}
 tccState = {}
 # TBD: there's gotta be a better way to combine dicts than this!
-tccState['stopped'] = merge_dicts(tccBase, axisStat)
+tccState['stopped'] = merge_dicts(tccBase, axisStat, atStow)
 
 
 # guider state setup
@@ -93,6 +100,7 @@ class Cmd(object):
         self.messages = []
         self.finished = False
         self.nFinished = 0
+        self.didFail = False
         self.cParser = parser.CommandParser()
         self.replyList = []
         self.calls = []
@@ -121,8 +129,10 @@ class Cmd(object):
         self.messages.append(txt)
     def _checkFinished(self):
         if self.finished:
-            print "!!!!!This cmd already finished %d times!"%self.nFinished
-            self.nFinished += 1
+            badTxt="!!!!!This cmd already finished %d times!"%self.nFinished
+            self._msg(badTxt,'w')
+        self.nFinished += 1
+    
     def inform(self,txt):
         self._msg(txt,'i')
     def respond(self,txt):
@@ -137,6 +147,7 @@ class Cmd(object):
         self._checkFinished()
         self._msg(txt,'f')
         self.finished = True
+        self.didFail = True
     
     def finish(self,txt):
         self._checkFinished()
