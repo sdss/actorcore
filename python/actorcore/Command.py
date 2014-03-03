@@ -120,7 +120,7 @@ class Command(object):
         """ Return failure. """
 
         if self.immortal:
-            self.__respond('w', response)
+            self.__respond('e', response)
         else:
             self.__respond('f', response)
             self.alive = False
