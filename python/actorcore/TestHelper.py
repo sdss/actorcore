@@ -2,6 +2,11 @@
 Help for writing test cases that need a Cmdr, Model, Actor, etc.
 """
 import sys
+import os
+import re
+import imp
+import inspect
+import opscore.protocols.validation as validation
 
 from actorcore import Actor
 from opscore.actor import keyvar
@@ -69,7 +74,9 @@ tccState['stopped'] = merge_dicts(tccBase, axisStat, atStow)
 
 
 # guider state setup
-cartLoaded = {'cartridgeLoaded':[1,1000,'A',54321,0]}
+bossLoaded = {'cartridgeLoaded':[11,1000,'A',54321,0]}
+apogeeLoaded = {'cartridgeLoaded':[1,1000,'A',54321,0]}
+mangaLoaded = {'cartridgeLoaded':[2,1000,'A',54321,0]}
 noDecenter = {'decenter':[0,'disabled',0,0,0,0,0]}
 yesDecenter = {'decenter':[0,'enabled',0,0,0,0,0]}
 guiderOn = {'guideState':['on']}
@@ -84,9 +91,9 @@ mangaS = {'mangaDither':['S'],'decenter':[0,'enabled',-0.417,-0.721,0,0,0]}
 mangaE = {'mangaDither':['E'],'decenter':[0,'enabled',+0.833,0,0,0,0]}
 mangaC = {'mangaDither':['C'],'decenter':[0,'disabled',0,0,0,0,0]}
 guiderState = {}
-guiderState['cartLoaded'] = merge_dicts(guiderOff,cartLoaded,mangaC)
-guiderState['guiderOn'] = merge_dicts(guiderOff,cartLoaded,mangaC)
-guiderState['guiderOnDecenter'] = merge_dicts(guiderOff,cartLoaded,mangaN)
+guiderState['cartLoaded'] = merge_dicts(guiderOff,bossLoaded,mangaC)
+guiderState['guiderOn'] = merge_dicts(guiderOff,bossLoaded,mangaC)
+guiderState['guiderOnDecenter'] = merge_dicts(guiderOff,bossLoaded,mangaN)
 
 class Cmd(object):
     """
@@ -409,8 +416,85 @@ class Model(object):
 
 class FakeActor(object):
     """A massively stripped-down version of actorcore.Actor."""
-    def __init__(self,name):
+    def __init__(self,name,productName=None):
         self.name = name
+        self.commandSets = {}
+        self.productName = productName if productName else self.name
+        product_dir_name = '$%s_DIR' % (self.productName.upper())
+        self.product_dir = os.path.expandvars(product_dir_name)
+        self.handler = validation.CommandHandler()
+        self.attachAllCmdSets()
+    
+    # the cmdSets stuff was lifted from actorcore/Actor.py
+    def attachCmdSet(self, cname, path=None):
+        """ (Re-)load and attach a named set of commands. """
+
+        if path == None:
+            path = [os.path.join(self.product_dir, 'python', self.productName, 'Commands')]
+               
+        file = None
+        try:
+            file, filename, description = imp.find_module(cname, path)
+            mod = imp.load_module(cname, file, filename, description)
+        except ImportError, e:
+            raise RuntimeError('Import of %s failed: %s' % (cname, e))
+        finally:
+            if file:
+                file.close()
+
+        # Instantiate and save a new command handler. 
+        exec('cmdSet = mod.%s(self)' % (cname))
+
+        # Check any new commands before finishing with the load. This
+        # is a bit messy, as the commands might depend on a valid
+        # keyword dictionary, which also comes from the module
+        # file.
+        #
+        # BAD problem here: the Keys define a single namespace. We need
+        # to check for conflicts and allow unloading. Right now we unilaterally 
+        # load the Keys and do not unload them if the validation fails.
+        if hasattr(cmdSet, 'keys') and cmdSet.keys:
+            keys.CmdKey.addKeys(cmdSet.keys)
+        valCmds = []
+        for v in cmdSet.vocab:
+            try:
+                verb, args, func = v
+            except ValueError, e:
+                raise RuntimeError("vocabulary word needs three parts: %s" % (v))
+
+            # Check that the function exists and get its help.
+            #
+            funcDoc = inspect.getdoc(func)
+            valCmd = validation.Cmd(verb, args, help=funcDoc) >> func
+            valCmds.append(valCmd)
+
+        # Got this far? Commit. Save the Cmds so that we can delete them later.
+        oldCmdSet = self.commandSets.get(cname, None)
+        cmdSet.validatedCmds = valCmds
+        self.commandSets[cname] = cmdSet
+
+        # Delete previous set of consumers for this named CmdSet, add new ones.
+        if oldCmdSet:
+            self.handler.removeConsumers(*oldCmdSet.validatedCmds)
+        self.handler.addConsumers(*cmdSet.validatedCmds)
+        
+    def attachAllCmdSets(self, path=None):
+        """ (Re-)load all command classes -- files in ./Command which end with Cmd.py."""
+
+        if path == None:
+            self.attachAllCmdSets(path=os.path.join(os.path.expandvars('$ACTORCORE_DIR'), 'python','actorcore','Commands'))
+            self.attachAllCmdSets(path=os.path.join(self.product_dir, 'python', self.productName, 'Commands'))
+            return
+
+        dirlist = os.listdir(path)
+        dirlist.sort()
+
+        for f in dirlist:
+            if os.path.isdir(f) and not f.startswith('.'):
+                self.attachAllCmdSets(path=f)
+            if re.match('^[a-zA-Z][a-zA-Z0-9_-]*Cmd\.py$', f):
+                self.attachCmdSet(f[:-3], [path])
+                
 
 class ActorState(object):
     """
@@ -429,7 +513,10 @@ class ActorState(object):
             Model.setDispatcher(cmd)
             self.dispatcherSet = True
         if actor is not None:
-            self.actor = FakeActor(actor)
+            productName = ''
+            if actor not in ('mcp','tcc'):
+                productName = actor+'Actor'
+            self.actor = FakeActor(actor,productName=productName)
             self.actor.bcast = cmd
             self.actor.cmdr = cmd
         for m,p in zip(models,modelParams):
