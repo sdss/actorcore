@@ -103,14 +103,11 @@ class Cmd(object):
     def __init__(self,verbose=False):
         """Save the level of any messages that pass through."""
         self.verbose = verbose
-        self.levels = ''
-        self.messages = []
         self.finished = False
         self.nFinished = 0
         self.didFail = False
         self.cParser = parser.CommandParser()
-        self.replyList = []
-        self.calls = []
+        self.clear_msgs()
         # Always fail when failCmd is called
         self.failOn = None
         # to keep track of whether BOSS hasn't been readout.
@@ -140,6 +137,13 @@ class Cmd(object):
             self._msg(badTxt,'w')
         self.nFinished += 1
     
+    def clear_msgs(self):
+        """Clear all message text, levels, and calls."""
+        self.levels = ''
+        self.messages = []
+        self.calls = []
+        self.replyList = []
+
     def inform(self,txt):
         self._msg(txt,'i')
     def respond(self,txt):
@@ -425,6 +429,9 @@ class FakeActor(object):
         self.handler = validation.CommandHandler()
         self.attachAllCmdSets()
     
+    def sendVersionKey(self,cmd):
+        cmd.inform("version=FAKE!")
+
     # the cmdSets stuff was lifted from actorcore/Actor.py
     def attachCmdSet(self, cname, path=None):
         """ (Re-)load and attach a named set of commands. """
