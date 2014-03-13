@@ -397,7 +397,84 @@ class Cmd(object):
         else:
             raise ValueError('Unknown decenter state: %s'%(state))
         return key,newVal
+
+
+class ActorTester(object):
+    """
+    Helper class for actor-related tests. Sets up a reasonable initial model state.
+
+    Expects that self.name be set to the name of this actor before setUp().
+    test suites should subclass this and unittest, in that order.
+    """
     
+    def setUp(self):
+        """Set some defaults and initialize self.actorState."""
+        self.timeout = 5
+        
+        try:
+            if self.verbose:
+                print "\n" # newline after unittest's docstring printing.
+        except NameError:
+            self.verbose = False
+        
+        self.cmd = Cmd(verbose=self.verbose)
+        
+        # default status for some actors
+        models = ['mcp','apogee','tcc','guider']
+        modelParams = [mcpState['all_off'],
+                       apogeeState['A_closed'],
+                       tccState['stopped'],
+                       guiderState['cartLoaded'],
+                      ]
+        self.actorState = ActorState(cmd=self.cmd,actor=self.name,models=models,modelParams=modelParams)
+
+    def _check_cmd(self, nCall, nInfo, nWarn, nErr, finish, didFail=False):
+        """Check cmd levels, whether it finished, and the cmd.call stack."""
+        if self.test_calls is not None:
+            self._check_calls(self.test_calls,self.cmd.calls)
+        else:
+            print "WARNING: %s doesn't have a cmd_calls definition!!!"%self.id()
+        self._check_levels(nCall, nInfo, nWarn, nErr)
+        self.assertEqual(self.cmd.finished, finish)
+        
+        if didFail and finish:
+            self.assertEqual(self.cmd.didFail, didFail)
+            # if we really "fail"ed, there should be exactly one fail message.
+            self.assertEqual(self.cmd.levels.count('f'),1)
+        elif not didFail and finish:
+            # if we "finish"ed, there should be exactly one finish message, and no fails.
+            self.assertEqual(self.cmd.levels.count('F'),1)
+            self.assertEqual(self.cmd.levels.count('f'),0)
+        else:
+            # if we didn't "fail", there should be exactly 0 fail messages.
+            self.assertEqual(self.cmd.levels.count('f'),0)
+    
+    def _check_levels(self, nCall, nInfo, nWarn, nErr):
+        """Check that the cmd levels match the expected result."""
+        l = self.cmd.levels
+        counts = (l.count('c'),l.count('i'),l.count('w'),l.count('e'))
+        self.assertEqual(counts,(nCall,nInfo,nWarn,nErr))
+    
+    def _check_calls(self,test_calls,calls):
+        """
+        Check that the actual cmd calls match the expected result.
+        Have to compare one "block" at a time, because of threading.
+        """
+        n = 0
+        actual,expected = [],[]
+        for sublist in test_calls:
+            i = len(sublist)
+            actual.extend(sorted(calls[n:n+i]))
+            expected.extend(sorted(sublist))
+            n = n+i
+        # tack on anything else that we missed.
+        actual.extend(calls[n:])
+        self.assertEqual(actual,expected)
+
+
+#
+# Stuff to fake actors/models/etc.
+#
 
 class Model(object):
     """quick replacement for Model in opscore/actorcore."""
