@@ -410,6 +410,8 @@ class ActorTester(object):
     def setUp(self):
         """Set some defaults and initialize self.actorState."""
         self.timeout = 5
+        if not getattr(self,'test_calls',None):
+            self.test_calls = []
         
         try:
             if self.verbose:
