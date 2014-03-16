@@ -74,9 +74,10 @@ tccState['stopped'] = merge_dicts(tccBase, axisStat, atStow)
 
 
 # guider state setup
-bossLoaded = {'cartridgeLoaded':[11,1000,'A',54321,0]}
-apogeeLoaded = {'cartridgeLoaded':[1,1000,'A',54321,0]}
-mangaLoaded = {'cartridgeLoaded':[2,1000,'A',54321,0]}
+bossLoaded = {'cartridgeLoaded':[11,1000,'A',54321,0], 'survey':['BOSS','BOSS']}
+apogeeLoaded = {'cartridgeLoaded':[1,1000,'A',54321,0], 'survey':['APOGEE','APOGEE']}
+mangaLoaded = {'cartridgeLoaded':[2,1000,'A',54321,0], 'survey':['MaNGA','MaNGA Dither']}
+apogeemangaLoaded = {'cartridgeLoaded':[2,1000,'A',54321,0], 'survey':['APOGEE-MaNGA','MaNGA Dither']}
 noDecenter = {'decenter':[0,'disabled',0,0,0,0,0]}
 yesDecenter = {'decenter':[0,'enabled',0,0,0,0,0]}
 guiderOn = {'guideState':['on']}
@@ -92,8 +93,12 @@ mangaE = {'mangaDither':['E'],'decenter':[0,'enabled',+0.833,0,0,0,0]}
 mangaC = {'mangaDither':['C'],'decenter':[0,'disabled',0,0,0,0,0]}
 guiderState = {}
 guiderState['cartLoaded'] = merge_dicts(guiderOff,bossLoaded,mangaC)
-guiderState['guiderOn'] = merge_dicts(guiderOff,bossLoaded,mangaC)
-guiderState['guiderOnDecenter'] = merge_dicts(guiderOff,bossLoaded,mangaN)
+guiderState['bossLoaded'] = merge_dicts(guiderOff,bossLoaded,mangaC)
+guiderState['apogeeLoaded'] = merge_dicts(guiderOff,apogeeLoaded,mangaC)
+guiderState['mangaLoaded'] = merge_dicts(guiderOff,mangaLoaded,mangaC)
+guiderState['apogeemangaLoaded'] = merge_dicts(guiderOff,apogeemangaLoaded,mangaC)
+guiderState['guiderOn'] = merge_dicts(guiderOn,bossLoaded,mangaC)
+guiderState['guiderOnDecenter'] = merge_dicts(guiderOn,mangaLoaded,mangaN)
 
 class Cmd(object):
     """
