@@ -6,9 +6,12 @@ import os
 import re
 import imp
 import inspect
-import opscore.protocols.validation as validation
+import logging
 
 from actorcore import Actor
+
+import opscore.protocols.validation as validation
+from opscore.utility.qstr import qstr
 from opscore.actor import keyvar
 from opscore.protocols import keys,types,parser,messages
 
@@ -113,6 +116,8 @@ class Cmd(object):
         self.didFail = False
         self.cParser = parser.CommandParser()
         self.clear_msgs()
+        self.cmdr = None # to make an Actor happy
+        self.mid = 0 # to make an Actor happy
         # Always fail when failCmd is called
         self.failOn = None
         # to keep track of whether BOSS hasn't been readout.
@@ -434,6 +439,20 @@ class ActorTester(object):
                        guiderState['cartLoaded'],
                       ]
         self.actorState = ActorState(cmd=self.cmd,actor=self.name,models=models,modelParams=modelParams)
+    
+    def _run_cmd(self,cmdStr,queue):
+        """Run the command in cmdStr on the current actor, and return the resutling msg."""
+        self.cmd.rawCmd = cmdStr
+        self.actor.runActorCmd(self.cmd)
+        return self._queue_get(queue)
+    
+    def _queue_get(self,queue):
+        """Get a message off the queue, and fail with a message if there isn't one."""
+        try:
+            return queue.get(timeout=self.timeout)
+        except queue.Empty:
+            self.cmd.fail('No message on the queue!')
+            return None
 
     def _check_cmd(self, nCall, nInfo, nWarn, nErr, finish, didFail=False):
         """Check cmd levels, whether it finished, and the cmd.call stack."""
@@ -512,11 +531,53 @@ class FakeActor(object):
         self.product_dir = os.path.expandvars(product_dir_name)
         self.handler = validation.CommandHandler()
         self.attachAllCmdSets()
+        self.cmdLog = logging.getLogger('cmds')
     
     def sendVersionKey(self,cmd):
         cmd.inform("version=FAKE!")
-
+    
+    #
     # the cmdSets stuff was lifted from actorcore/Actor.py
+    #
+    def runActorCmd(self, cmd):
+        try:
+            cmdStr = cmd.rawCmd
+            self.cmdLog.debug('raw cmd: %s' % (cmdStr))
+            
+            try:
+                validatedCmd, cmdFuncs = self.handler.match(cmdStr)
+            except Exception, e:
+                cmd.fail('text=%s' % (qstr("Unmatched command: %s (exception: %s)" %
+                                           (cmdStr, e))))
+                    #tback('actor_loop', e)
+                return
+
+            if not validatedCmd:
+                cmd.fail('text=%s' % (qstr("Unrecognized command: %s" % (cmdStr))))
+                return
+                
+            self.cmdLog.info('< %s:%d %s' % (cmd.cmdr, cmd.mid, validatedCmd))
+            if len(cmdFuncs) > 1:
+                cmd.warn('text=%s' % (qstr("command has more than one callback (%s): %s" %
+                                           (cmdFuncs, validatedCmd))))
+            try:
+                cmd.cmd = validatedCmd
+                for func in cmdFuncs:
+                    func(cmd)
+            except Exception, e:
+                oneLiner = self.cmdTraceback(e)
+                cmd.fail('text=%s' % (qstr("command failed: %s" % (oneLiner))))
+                #tback('newCmd', e)
+                return
+                
+        except Exception, e:
+            cmd.fail('text=%s' % (qstr("completely unexpected exception when processing a new command: %s" %
+                                       (e))))
+            try:
+                tback('newCmdFail', e)
+            except:
+                pass
+
     def attachCmdSet(self, cname, path=None):
         """ (Re-)load and attach a named set of commands. """
 
