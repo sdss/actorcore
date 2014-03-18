@@ -551,11 +551,11 @@ class FakeActor(object):
                                            (cmdStr, e))))
                     #tback('actor_loop', e)
                 return
-
+            
             if not validatedCmd:
                 cmd.fail('text=%s' % (qstr("Unrecognized command: %s" % (cmdStr))))
                 return
-                
+            
             self.cmdLog.info('< %s:%d %s' % (cmd.cmdr, cmd.mid, validatedCmd))
             if len(cmdFuncs) > 1:
                 cmd.warn('text=%s' % (qstr("command has more than one callback (%s): %s" %
@@ -565,8 +565,7 @@ class FakeActor(object):
                 for func in cmdFuncs:
                     func(cmd)
             except Exception, e:
-                oneLiner = self.cmdTraceback(e)
-                cmd.fail('text=%s' % (qstr("command failed: %s" % (oneLiner))))
+                cmd.fail('text=%s' % (qstr("command failed: %s" % (e))))
                 #tback('newCmd', e)
                 return
                 
