@@ -63,6 +63,17 @@ apogeeState['B_open'] = merge_dicts(ditherB, shutterOpen, notReading)
 apogeeState['unknown'] = merge_dicts(ditherUnknown, shutterUnknown, notReading)
 
 
+#BOSS state setup
+exposureIdle = {'exposureState':['IDLE',0,0]}
+exposureIntegrating = {'exposureState':['INTEGRATING',900,100]}
+exposureReading = {'exposureState':['READING',60,10]}
+exposureAborted = {'exposureState':['ABORTED',0,0]}
+bossState['idle'] = merge_dicts(exposureIdle)
+bossState['integrating'] = merge_dicts(exposureIntegrating)
+bossState['reading'] = merge_dicts(exposureReading)
+bossState['aborted'] = merge_dicts(exposureAborted)
+
+
 # TCC state setup
 tccBase = {'axisBadStatusMask':['0x00057800'], 
            'moveItems':[''], 'inst':['guider'], 
