@@ -68,6 +68,7 @@ exposureIdle = {'exposureState':['IDLE',0,0]}
 exposureIntegrating = {'exposureState':['INTEGRATING',900,100]}
 exposureReading = {'exposureState':['READING',60,10]}
 exposureAborted = {'exposureState':['ABORTED',0,0]}
+bossState = {}
 bossState['idle'] = merge_dicts(exposureIdle)
 bossState['integrating'] = merge_dicts(exposureIntegrating)
 bossState['reading'] = merge_dicts(exposureReading)
