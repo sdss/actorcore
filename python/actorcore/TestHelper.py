@@ -4,6 +4,7 @@ Help for writing test cases that need a Cmdr, Model, Actor, etc.
 import sys
 import os
 import re
+import time
 import imp
 import inspect
 import logging
@@ -312,6 +313,7 @@ class Cmd(object):
         else:
             # any other boss commands just succeed.
             self.didFail = False
+        time.sleep(.1) # waiting a short bit helps with lamp timings.
     
     def mcp_succeed(self,*args,**kwargs):
         """Handle mcp commands as successes, and update appropriate keywords."""
