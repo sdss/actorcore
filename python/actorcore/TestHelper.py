@@ -77,23 +77,23 @@ bossState['aborted'] = merge_dicts(exposureAborted)
 
 
 # TCC state setup
-tccBase = {'axisBadStatusMask':['0x00057800'], 
-           'moveItems':[''], 'inst':['guider'], 
-           'slewEnd':'', 'tccStatus':['','']}
+tccBase = {'axisBadStatusMask':['0x00057800'], 'utc_TAI':[-35.0],
+           'moveItems':[''], 'inst':['guider'], 'objName':[''],
+           'slewEnd':'', 'tccStatus':['',''],
+           'objNetPos':[121.0, 0.0, 4908683470.64, 30.0, 0.0, 4908683470.64]}
 axisStat = {'azStat':[0]*4, 'altStat':[0]*4, 'rotStat':[0]*4}
 atStow = {'axePos':[121,15,0]}
 atGangChange = {'axePos':[121,45,0]}
 atInstChange = {'axePos':[0,90,0]}
 tccState = {}
-# TBD: there's gotta be a better way to combine dicts than this!
 tccState['stopped'] = merge_dicts(tccBase, axisStat, atStow)
 
 
 # guider state setup
-bossLoaded = {'cartridgeLoaded':[11,1000,'A',54321,0], 'survey':['BOSS','BOSS']}
-apogeeLoaded = {'cartridgeLoaded':[1,1000,'A',54321,0], 'survey':['APOGEE','APOGEE']}
-mangaLoaded = {'cartridgeLoaded':[2,1000,'A',54321,0], 'survey':['MaNGA','MaNGA Dither']}
-apogeemangaLoaded = {'cartridgeLoaded':[2,1000,'A',54321,0], 'survey':['APOGEE-MaNGA','MaNGA Dither']}
+bossLoaded = {'cartridgeLoaded':[11,1000,'A',54321,1], 'survey':['BOSS','BOSS']}
+apogeeLoaded = {'cartridgeLoaded':[1,2000,'A',54321,2], 'survey':['APOGEE','APOGEE']}
+mangaLoaded = {'cartridgeLoaded':[2,3000,'A',54321,3], 'survey':['MaNGA','MaNGA Dither']}
+apogeemangaLoaded = {'cartridgeLoaded':[3,4000,'A',54321,4], 'survey':['APOGEE-MaNGA','MaNGA Dither']}
 noDecenter = {'decenter':[0,'disabled',0,0,0,0,0]}
 yesDecenter = {'decenter':[0,'enabled',0,0,0,0,0]}
 guiderOn = {'guideState':['on']}
@@ -116,10 +116,46 @@ guiderState['apogeemangaLoaded'] = merge_dicts(guiderOff,apogeemangaLoaded,manga
 guiderState['guiderOn'] = merge_dicts(guiderOn,bossLoaded,mangaC)
 guiderState['guiderOnDecenter'] = merge_dicts(guiderOn,mangaLoaded,mangaN)
 
+
+# platedb state setup
+bossPointing = {'pointingInfo':[1000,11,'A',10.,20.,1.,0.,5500,'BOSS','BOSS']}
+apogeePointing = {'pointingInfo':[2000,1,'A',20.,30.,2.,1.,10500,'APOGEE','APOGEE']}
+mangaPointing = {'pointingInfo':[3000,2,'A',30.,40.,3.,2.,5500,'MaNGA','MaNGA dither']}
+apogeemangaPointing = {'pointingInfo':[4000,3,'A',40.,50.,4.,3.,10500,'APOGEE-MANGA','APOGEE lead']}
+mangaapogeePointing = {'pointingInfo':[5000,4,'A',50.,60.,5.,4.,5500,'APOGEE-MaNGA','MaNGA dither']}
+platedbState = {}
+platedbState['boss'] = merge_dicts(bossPointing)
+platedbState['apogee'] = merge_dicts(apogeePointing)
+platedbState['manga'] = merge_dicts(mangaPointing)
+platedbState['apogee_manga'] = merge_dicts(mangaapogeePointing)
+platedbState['manga_apogee'] = merge_dicts(apogeemangaPointing)
+
+# gcamera state setup
+gcameraTempOk = {'cooler':[-40,-40,-40,80,1,'Correcting']}
+gcameraState = {}
+gcameraState['ok'] = merge_dicts(gcameraTempOk)
+
+# sop state setup
+bypasses = ["ffs", "ff_lamp", "hgcd_lamp", "ne_lamp", "axes", 
+            "brightPlate", "darkPlate", "gangCart", "gangPodium", 
+            "slewToField","guiderDark"]
+sopNoBypass = {'bypassNames':bypasses,'bypassed':[0,]*len(bypasses)}
+sopEmptyCommands = {"surveyCommands":['gotoStow', 'gotoInstrumentChange']}
+sopBossCommands = {"surveyCommands":['gotoField','hartmann', 'doBossCalibs',
+                                      'doBossScience','gotoInstrumentChange']}
+sopMangaCommands = {"surveyCommands":['gotoField','hartmann', 'doBossCalibs',
+                                      'doBossScience','gotoInstrumentChange']}
+sopApogeeCommands = {"surveyCommands":['gotoField', 'doApogeeScience', 'doApogeeSkyFlats',
+                                       'gotoGangChange', 'gotoInstrumentChange', 'doApogeeDomeFlat']}
+
+sopState = {}
+sopState['ok'] = merge_dicts(sopNoBypass,sopEmptyCommands)
+
+
 class Cmd(object):
     """
     Fake commander object, keeps the message level and message for
-    all messages sent through it. 
+    all messages sent through it.
     """
     def __init__(self,verbose=False):
         """Save the level of any messages that pass through."""
@@ -131,8 +167,12 @@ class Cmd(object):
         self.clear_msgs()
         self.cmdr = None # to make an Actor happy
         self.mid = 0 # to make an Actor happy
-        # Always fail when failCmd is called
+
+        # Always fail when failOn is called as a command.
         self.failOn = None
+        # Increase failOnCount to fail on the Nth call of failOn.
+        self.failOnCount = 1
+
         # to keep track of whether BOSS hasn't been readout.
         self.bossNeedsReadout = False
         
@@ -183,7 +223,7 @@ class Cmd(object):
         self.finished = True
         self.didFail = True
     
-    def finish(self,txt):
+    def finish(self,txt=''):
         self._checkFinished()
         self._msg(txt,'F')
         self.finished = True
@@ -198,7 +238,11 @@ class Cmd(object):
             text = str(*args).strip()
             self._msg(text,'c')
             if self.failOn is not None and command == self.failOn:
-                self.didFail = True
+                if self.failOnCount == 1:
+                    self.didFail = True
+                else:
+                    self.failOnCount -= 1
+                    self.didFail = False
             else:
                 self.didFail = False
             return self
@@ -222,8 +266,11 @@ class Cmd(object):
         command = text.split('<<')[0].strip()
         self.calls.append(command)
         if self.failOn is not None and command == self.failOn:
-            self.didFail = True
-            return self
+            if self.failOnCount == 1:
+                self.didFail = True
+                return self
+            else:
+                self.failOnCount -= 1
         
         # Handle commands where we have to set a new state.
         if actor == 'apogee':
@@ -298,33 +345,38 @@ class Cmd(object):
         if cmd.name == 'exposure':
             readout = 'readout' in cmd.keywords
             noreadout = 'noreadout' in cmd.keywords
-            if readout:
+            if readout and self.bossNeedsReadout:
                 self.bossNeedsReadout = False
                 self.didFail = False
+                time.sleep(1) # waiting a short bit helps with lamp timings.
+            elif readout and not self.bossNeedsReadout:
+                self.didFail = True
+                print "Error! boss says: No exposure to act on."                
             elif not readout and self.bossNeedsReadout:
                 self.didFail = True
                 print "Error! Cannot take BOSS exposure: need to readout previous one!"
             elif noreadout:
                 self.bossNeedsReadout = True
                 self.didFail = False
+                time.sleep(1) # waiting a short bit helps with lamp timings.
             else:
                 self.bossNeedsReadout = False
                 self.didFail = False
+                time.sleep(1) # waiting a short bit helps with lamp timings.
         else:
             # any other boss commands just succeed.
             self.didFail = False
-        time.sleep(.1) # waiting a short bit helps with lamp timings.
     
     def mcp_succeed(self,*args,**kwargs):
         """Handle mcp commands as successes, and update appropriate keywords."""
         try:
             cmdStr = kwargs.get('cmdStr')
             if 'ff.' in cmdStr:
-                key,newVal = self._do_lamp('ff',cmdStr.split('.')[-1])
+                result = self._do_lamp('ff',cmdStr.split('.')[-1])
             elif 'ne.' in cmdStr:
-                key,newVal = self._do_lamp('ne',cmdStr.split('.')[-1])
+                result = self._do_lamp('ne',cmdStr.split('.')[-1])
             elif 'hgcd.' in cmdStr:
-                key,newVal = self._do_lamp('hgCd',cmdStr.split('.')[-1])
+                result = self._do_lamp('hgCd',cmdStr.split('.')[-1])
             elif 'wht.' in cmdStr:
                 # these two lamps are always off. So do nothing.
                 self.didFail = False
@@ -333,20 +385,33 @@ class Cmd(object):
                 self.didFail = False
                 return
             elif 'ffs.' in cmdStr:
-                key,newVal = self._do_ffs(cmdStr.split('.')[-1])
+                result = self._do_ffs(cmdStr.split('.')[-1])
             else:
                 raise ValueError('Unknown mcp command: %s'%cmdStr)
         except ValueError as e:
             print 'ValueError in mcp_succeed:',e
             self.didFail = True
         else:
+            if result is None:
+                # key was already newVal, so do nothing.
+                return
+            else:
+                key,newVal = result
             self.didFail = False
             global globalModels
             globalModels['mcp'].keyVarDict[key].set(newVal)
                 
     def _do_lamp(self,lamp,state):
-        """Change lamp to new state"""
+        """
+        Change lamp to new state.
+
+        Return the new key/value pair, or None if nothing is to be changed.
+        """
         key = lamp+'Lamp'
+        val = globalModels['mcp'].keyVarDict[key].getValue()
+
+        if (state == 'on' and sum(val) == 4) or (state == 'off' and val == 0):
+            return None
         if state == 'on':
             newVal = [1]*4
         elif state == 'off':
@@ -381,8 +446,12 @@ class Cmd(object):
                 key,newVal = 'guideState',guiderOn
             elif cmd.name == 'off':
                 key,newVal = 'guideState',guiderOff
-            elif cmd.name == 'flat' or cmd.name in ("axes", "scale", "focus"):
-                # just succeed on a guider flat or axes clear.
+            elif cmd.name == 'flat':
+                time.sleep(1) # waiting a short bit helps with lamp timings.
+                self.didFail = False
+                return
+            elif cmd.name in ("axes", "scale", "focus"):
+                # just succeed on axes clear.
                 self.didFail = False
                 return
             else:
@@ -434,6 +503,8 @@ class ActorTester(object):
     def setUp(self):
         """Set some defaults and initialize self.actorState."""
         self.timeout = 5
+        # Set this to True to fail if there is no cmd_calls defined for that test.
+        self.fail_on_no_cmd_calls = False
         if not getattr(self,'test_calls',None):
             self.test_calls = []
         
@@ -446,11 +517,14 @@ class ActorTester(object):
         self.cmd = Cmd(verbose=self.verbose)
         
         # default status for some actors
-        models = ['mcp','apogee','tcc','guider']
+        models = ['mcp','apogee','tcc','guider','platedb','gcamera','sop']
         modelParams = [mcpState['all_off'],
                        apogeeState['A_closed'],
                        tccState['stopped'],
-                       guiderState['cartLoaded'],
+                       guiderState['bossLoaded'],
+                       platedbState['boss'],
+                       gcameraState['ok'],
+                       sopState['ok']
                       ]
         self.actorState = ActorState(cmd=self.cmd,actor=self.name,models=models,modelParams=modelParams)
     
@@ -473,7 +547,9 @@ class ActorTester(object):
         if self.test_calls is not None:
             self._check_calls(self.test_calls,self.cmd.calls)
         else:
-            print "WARNING: %s doesn't have a cmd_calls definition!!!"%self.id()
+            errMsg = "%s doesn't have a cmd_calls definition!"%self.id()
+            print("WARNING: %s"%errMsg)
+            self.assertFalse(self.fail_on_no_cmd_calls,errMsg)
         self._check_levels(nCall, nInfo, nWarn, nErr)
         self.assertEqual(self.cmd.finished, finish)
         

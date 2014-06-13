@@ -238,15 +238,15 @@ def tccCards(models, cmd=None):
 def plateCards(models, cmd):
     """ Return a list of pyfits Cards describing the plate/cartrige/pointing"""
     
-    nameComment = "impossible error handling guider.cartridgeLoaded keyword"
+    nameComment = "guider.cartridgeLoaded error"
     try:
         try:
             cartridgeKey = models['guider'].keyVarDict['cartridgeLoaded']
-        except:
+        except Exception as e:
             nameComment = "Could not fetch guider.cartridgeLoaded keyword"
-            cmd.warn('text="Could not fetch guider.cartridgeLoaded keyword"')
-            raise 
-
+            cmd.warn('text="%s"'%nameComment)
+            raise e
+        
         cartridge, plate, pointing, mjd, mapping = cartridgeKey
         if plate <= 0 or cartridge <= 0 or mjd < 50000 or mapping < 1 or pointing == '?':
             cmd.warn('text="guider cartridgeKey is not well defined: %s"' % (str(cartridgeKey)))
@@ -255,19 +255,52 @@ def plateCards(models, cmd):
         else:
             nameComment = 'The name of the currently loaded plate'
             name = "%04d-%05d-%02d" % (plate, mjd, mapping)
-    except:
+    except Exception as e:
+        nameComment += "-cartKeyExcept: %s"%e
         cartridge, plate, pointing, mjd, mapping = -1,-1,'?',-1,-1
         name = '0000-00000-00'
-
+    
+    try:
+        survey = models['guider'].keyVarDict['survey']
+        plateType, surveyMode = survey
+    except Exception as e:
+       plateType = "guider.survey Exception: %s"%e
+    
     cards = []
     cards.append(makeCard(cmd, 'NAME', name, nameComment))
     cards.append(makeCard(cmd, 'PLATEID', plate, 'The currently loaded plate'))
     cards.append(makeCard(cmd, 'CARTID', cartridge, 'The currently loaded cartridge'))
     cards.append(makeCard(cmd, 'MAPID', mapping, 'The mapping version of the loaded plate'))
     cards.append(makeCard(cmd, 'POINTING', pointing, 'The currently specified pointing'))
+    cards.append(makeCard(cmd, 'PLATETYP', plateType, 'Type of plate (e.g. BOSS, MANGA, APOGEE, APOGEE-MANGA)'))
+    # Only include survey mode when it has been specified.
+    if surveyMode is not 'None':
+        cards.append(makeCard(cmd, 'SRVYMODE', surveyMode, 'Survey leading this observation and its mode'))
 
     return cards
+
+def guiderCards(models, cmd):
+    """Return a list of pyfits Cards describing the current guider status."""
+    try:
+        mangaDitherKey = models['guider'].keyVarDict['mangaDither']
+        mangaDither = mangaDitherKey[0]
+    except Exception as e:
+        mangaDither = '??'
     
+    try:
+        decenterKey = models['guider'].keyVarDict['decenter']
+        expid,enabled,ra,dec,rot,focus,scale = decenterKey
+    except Exception as e:
+        expid,enabled,ra,dec,rot,focus,scale = -1,'?',-1,-1,-1,-1,-1
+    
+    cards = []
+    cards.append(makeCard(cmd, 'MGDPOS', mangaDither, 'MaNGA dither position (C,N,S,E)'))
+    cards.append(makeCard(cmd, 'MGDRA', ra, 'MaNGA decenter in RA, redundant with MGDPOS'))
+    cards.append(makeCard(cmd, 'MGDDEC', dec, 'MaNGA decenter in Dec, redundant with MGDPOS'))
+    #cards.append(makeCard(cmd, 'SEEING', name, 'Mean of guider seeing'))
+    #cards.append(makeCard(cmd, 'TRANSPAR', name, 'Mean of guider transparancy'))
+    return cards
+
 def _cnvListCard(val, itemCnv=int):
     """ Stupid utility to cons up a single string card from a list. """
 
@@ -286,7 +319,7 @@ def _cnvPVTVelCard(pvt):
          return numpy.nan
 
 def writeFits(cmd, hdu, directory, filename, doCompress=False, chmod=0444,
-              checksum=True, caller=''):
+              checksum=True, caller='', output_verify='warn'):
     """
     Write a fits hdu to a fits file: directory/filename[.gz].
     
@@ -303,6 +336,7 @@ def writeFits(cmd, hdu, directory, filename, doCompress=False, chmod=0444,
         chmod: the mode you want the file to have (444 = all readonly).
         checksum: compute and save the checksum inside the file.
         caller: name of the calling object, for logging.
+        output_verify: what to do about things that violate the FITS standard.
     
     Returns:
         The full name of the file that was eventually written.
@@ -338,7 +372,7 @@ def writeFits(cmd, hdu, directory, filename, doCompress=False, chmod=0444,
             outName = os.path.join(directory, filename)
         
         logging.info("Writing %s (via %s)" % (outName, tempName))        
-        hdu.writeto(tempFile, checksum=checksum)
+        hdu.writeto(tempFile, checksum=checksum, output_verify=output_verify)
         tempFile.flush()
         os.fsync(tempFile.fileno())
         os.fchmod(tempFile.fileno(), chmod)
