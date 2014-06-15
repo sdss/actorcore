@@ -44,6 +44,7 @@ mcpState['arcs'] = merge_dicts(ffsClosed,arcOn,flatOff,gangPodium)
 mcpState['boss_science'] = merge_dicts(ffsOpen,arcOff,flatOff,gangPodium)
 mcpState['apogee_science'] = merge_dicts(ffsOpen,arcOff,flatOff,gangCart)
 mcpState['all_off'] = merge_dicts(ffsClosed,arcOff,flatOff,gangPodium)
+mcpState['apogee_parked'] = merge_dicts(ffsClosed,arcOff,flatOff,gangCart)
 # these lamps should always be off, so set them as such...
 for n in mcpState:
     mcpState[n].update(othersOff)
@@ -352,7 +353,7 @@ class Cmd(object):
                 time.sleep(1) # waiting a short bit helps with lamp timings.
             elif readout and not self.bossNeedsReadout:
                 self.didFail = True
-                print "Error! boss says: No exposure to act on."                
+                print "Error! boss says: No exposure to act on."
             elif not readout and self.bossNeedsReadout:
                 self.didFail = True
                 print "Error! Cannot take BOSS exposure: need to readout previous one!"
