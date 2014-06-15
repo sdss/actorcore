@@ -41,7 +41,8 @@ gang1m = {'apogeeGang':[36]}
 mcpState = {}
 mcpState['flats'] = merge_dicts(ffsClosed,arcOff,flatOn,gangPodium)
 mcpState['arcs'] = merge_dicts(ffsClosed,arcOn,flatOff,gangPodium)
-mcpState['science'] = merge_dicts(ffsOpen,arcOff,flatOff,gangCart)
+mcpState['boss_science'] = merge_dicts(ffsOpen,arcOff,flatOff,gangPodium)
+mcpState['apogee_science'] = merge_dicts(ffsOpen,arcOff,flatOff,gangCart)
 mcpState['all_off'] = merge_dicts(ffsClosed,arcOff,flatOff,gangPodium)
 # these lamps should always be off, so set them as such...
 for n in mcpState:
