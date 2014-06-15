@@ -544,7 +544,7 @@ class ActorTester(object):
             self.cmd.fail('No message on the queue!')
             return None
 
-    def _check_cmd(self, nCall, nInfo, nWarn, nErr, finish, didFail=False):
+    def _check_cmd(self, nCall, nInfo, nWarn, nErr, finish, didFail=False, **kwargs):
         """Check cmd levels, whether it finished, and the cmd.call stack."""
         if self.test_calls is not None:
             self._check_calls(self.test_calls,self.cmd.calls)
