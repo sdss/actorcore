@@ -142,13 +142,15 @@ bypasses = ["ffs", "ff_lamp", "hgcd_lamp", "ne_lamp", "axes",
             "brightPlate", "darkPlate", "gangCart", "gangPodium", 
             "slewToField","guiderDark"]
 sopNoBypass = {'bypassNames':bypasses,'bypassed':[0,]*len(bypasses)}
-sopEmptyCommands = {"surveyCommands":['gotoStow', 'gotoInstrumentChange']}
-sopBossCommands = {"surveyCommands":['gotoField','hartmann', 'doBossCalibs',
-                                      'doBossScience','gotoInstrumentChange']}
-sopMangaCommands = {"surveyCommands":['gotoField','hartmann', 'doBossCalibs',
-                                      'doBossScience','gotoInstrumentChange']}
-sopApogeeCommands = {"surveyCommands":['gotoField', 'doApogeeScience', 'doApogeeSkyFlats',
-                                       'gotoGangChange', 'gotoInstrumentChange', 'doApogeeDomeFlat']}
+sopEmptyCommands = {"surveyCommands":('gotoStow', 'gotoInstrumentChange')}
+sopBossCommands = {"surveyCommands":('gotoField','hartmann', 'doBossCalibs',
+                                      'doBossScience','gotoInstrumentChange')}
+sopMangaCommands = {"surveyCommands":('gotoField', 'hartmann', 'doBossCalibs',
+                                      'doMangaDither', 'doMangaSequence',
+                                      'gotoInstrumentChange')}
+sopApogeeCommands = {"surveyCommands":('gotoField', 'doApogeeScience',
+                                       'doApogeeSkyFlats', 'gotoGangChange',
+                                       'gotoInstrumentChange', 'doApogeeDomeFlat')}
 
 sopState = {}
 sopState['ok'] = merge_dicts(sopNoBypass,sopEmptyCommands)
@@ -211,6 +213,8 @@ class Cmd(object):
 
     def inform(self,txt):
         self._msg(txt,'i')
+        # fake-set the model, if needs-be
+        self.use_keywords(txt)
     def respond(self,txt):
         self._msg(txt,'i')
     def diag(self,txt):
@@ -232,6 +236,14 @@ class Cmd(object):
     def isAlive(self):
         return not self.finished
     
+    def use_keywords(self,txt):
+        """Update a model keyword, given an inform-level output."""
+        key = 'surveyCommands'
+        if key in txt:
+            val = txt.split('=')[-1].split(', ')
+            global globalModels
+            globalModels['sop'].keyVarDict[key].set(val)
+
     def call(self,*args,**kwargs):
         """Pretend to complete command successfully."""
         
