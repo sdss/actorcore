@@ -95,7 +95,7 @@ tccState['stopped'] = merge_dicts(tccBase, axisStat, atStow)
 bossLoaded = {'cartridgeLoaded':[11,1000,'A',54321,1], 'survey':['BOSS','BOSS']}
 apogeeLoaded = {'cartridgeLoaded':[1,2000,'A',54321,2], 'survey':['APOGEE','APOGEE']}
 mangaLoaded = {'cartridgeLoaded':[2,3000,'A',54321,3], 'survey':['MaNGA','MaNGA Dither']}
-apogeemangaLoaded = {'cartridgeLoaded':[3,4000,'A',54321,4], 'survey':['APOGEE-MaNGA','MaNGA Dither']}
+apogeemangaLoaded = {'cartridgeLoaded':[3,4000,'A',54321,4], 'survey':['APOGEE-2;MaNGA','MaNGA Dither']}
 noDecenter = {'decenter':[0,'disabled',0,0,0,0,0]}
 yesDecenter = {'decenter':[0,'enabled',0,0,0,0,0]}
 guiderOn = {'guideState':['on']}
@@ -531,14 +531,15 @@ class ActorTester(object):
         self.cmd = Cmd(verbose=self.verbose)
         
         # default status for some actors
-        models = ['mcp','apogee','tcc','guider','platedb','gcamera','sop']
+        models = ['mcp','apogee','tcc','guider','platedb','gcamera','sop','boss']
         modelParams = [mcpState['all_off'],
                        apogeeState['A_closed'],
                        tccState['stopped'],
                        guiderState['bossLoaded'],
                        platedbState['boss'],
                        gcameraState['ok'],
-                       sopState['ok']
+                       sopState['ok'],
+                       bossState['idle']
                       ]
         self.actorState = ActorState(cmd=self.cmd,actor=self.name,models=models,modelParams=modelParams)
     
