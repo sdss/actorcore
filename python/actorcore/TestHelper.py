@@ -707,7 +707,7 @@ class FakeActor(object):
             if file:
                 file.close()
 
-        # Instantiate and save a new command handler.
+        # Instantiate and save a new command handler. 
         exec('cmdSet = mod.%s(self)' % (cname))
 
         # Check any new commands before finishing with the load. This
@@ -716,7 +716,7 @@ class FakeActor(object):
         # file.
         #
         # BAD problem here: the Keys define a single namespace. We need
-        # to check for conflicts and allow unloading. Right now we unilaterally
+        # to check for conflicts and allow unloading. Right now we unilaterally 
         # load the Keys and do not unload them if the validation fails.
         if hasattr(cmdSet, 'keys') and cmdSet.keys:
             keys.CmdKey.addKeys(cmdSet.keys)
