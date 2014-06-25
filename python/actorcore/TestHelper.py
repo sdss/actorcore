@@ -151,6 +151,12 @@ sopMangaCommands = {"surveyCommands":('gotoField', 'hartmann', 'doBossCalibs',
 sopApogeeCommands = {"surveyCommands":('gotoField', 'doApogeeScience',
                                        'doApogeeSkyFlats', 'gotoGangChange',
                                        'gotoInstrumentChange', 'doApogeeDomeFlat')}
+sopApogeeMangaCommands = {"surveyCommands":('gotoField',
+                                            'hartmann', 'doBossCalibs',
+                                            'doApogeeMangaDither', 'doApogeeMangaSequence',
+                                            'doApogeeSkyFlats', 'gotoGangChange',
+                                            'gotoInstrumentChange', 'doApogeeDomeFlat')}
+
 
 sopState = {}
 sopState['ok'] = merge_dicts(sopNoBypass,sopEmptyCommands)
