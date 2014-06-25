@@ -138,8 +138,8 @@ gcameraState = {}
 gcameraState['ok'] = merge_dicts(gcameraTempOk)
 
 # sop state setup
-bypasses = ["ffs", "ff_lamp", "hgcd_lamp", "ne_lamp", "axes", 
-            "brightPlate", "darkPlate", "gangCart", "gangPodium", 
+bypasses = ["ffs", "ff_lamp", "hgcd_lamp", "ne_lamp", "axes",
+            "brightPlate", "darkPlate", "gangCart", "gangPodium",
             "slewToField","guiderDark"]
 sopNoBypass = {'bypassNames':bypasses,'bypassed':[0,]*len(bypasses)}
 sopEmptyCommands = {"surveyCommands":('gotoStow', 'gotoInstrumentChange')}
@@ -553,7 +553,10 @@ class ActorTester(object):
         """Run the command in cmdStr on the current actor, and return the resutling msg."""
         self.cmd.rawCmd = cmdStr
         self.actor.runActorCmd(self.cmd)
-        return self._queue_get(queue)
+        if queue is not None:
+            return self._queue_get(queue)
+        else:
+            return None
     
     def _queue_get(self,queue):
         """Get a message off the queue, and fail with a message if there isn't one."""
@@ -704,7 +707,7 @@ class FakeActor(object):
             if file:
                 file.close()
 
-        # Instantiate and save a new command handler. 
+        # Instantiate and save a new command handler.
         exec('cmdSet = mod.%s(self)' % (cname))
 
         # Check any new commands before finishing with the load. This
@@ -713,7 +716,7 @@ class FakeActor(object):
         # file.
         #
         # BAD problem here: the Keys define a single namespace. We need
-        # to check for conflicts and allow unloading. Right now we unilaterally 
+        # to check for conflicts and allow unloading. Right now we unilaterally
         # load the Keys and do not unload them if the validation fails.
         if hasattr(cmdSet, 'keys') and cmdSet.keys:
             keys.CmdKey.addKeys(cmdSet.keys)
