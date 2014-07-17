@@ -779,7 +779,7 @@ class ActorState(object):
             self.dispatcherSet = True
         if actor is not None:
             productName = ''
-            if actor not in ('mcp','tcc'):
+            if actor not in ('mcp','tcc','boss'):
                 productName = actor+'Actor'
             self.actor = FakeActor(actor,productName=productName)
             self.actor.bcast = cmd
