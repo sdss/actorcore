@@ -8,6 +8,9 @@ import time
 import imp
 import inspect
 import logging
+import threading
+
+call_lock = threading.RLock()
 
 from actorcore import Actor
 
@@ -161,7 +164,6 @@ sopApogeeMangaCommands = {"surveyCommands":('gotoField',
 sopState = {}
 sopState['ok'] = merge_dicts(sopNoBypass,sopEmptyCommands)
 
-
 class Cmd(object):
     """
     Fake commander object, keeps the message level and message for
@@ -251,8 +253,18 @@ class Cmd(object):
             globalModels['sop'].keyVarDict[key].set(val)
 
     def call(self,*args,**kwargs):
-        """Pretend to complete command successfully."""
-        
+        """
+        Pretend to complete command successfully, or not, in a thread-safe manner.
+
+        NOTE: had to make this threadsafe, as cmd calls were overwriting
+        each other's cmdStr below, causing testcase weirdness.
+        Could this be a source of problems in the actual Cmdr?
+        """
+        with call_lock:
+            return self._call(*args,**kwargs)
+
+    def _call(self,*args,**kwargs):
+        """Pretend to complete command successfully, or not. (not thread safe)"""
         # for handling FakeThread stuff.
         if args:
             text = str(*args).strip()
