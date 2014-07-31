@@ -95,10 +95,13 @@ tccState['stopped'] = merge_dicts(tccBase, axisStat, atStow)
 
 
 # guider state setup
-bossLoaded = {'cartridgeLoaded':[11,1000,'A',54321,1], 'survey':['BOSS','BOSS']}
-apogeeLoaded = {'cartridgeLoaded':[1,2000,'A',54321,2], 'survey':['APOGEE','APOGEE']}
-mangaLoaded = {'cartridgeLoaded':[2,3000,'A',54321,3], 'survey':['MaNGA','MaNGA Dither']}
-apogeemangaLoaded = {'cartridgeLoaded':[3,4000,'A',54321,4], 'survey':['APOGEE-2&MaNGA','MaNGA Dither']}
+bossLoaded = {'cartridgeLoaded':[11,1000,'A',54321,1], 'survey':['BOSS','None']}
+apogeeLoaded = {'cartridgeLoaded':[1,2000,'A',54321,2], 'survey':['APOGEE','None']}
+mangaDitherLoaded = {'cartridgeLoaded':[2,3000,'A',54321,3], 'survey':['MaNGA','MaNGA Dither']}
+mangaStareLoaded = {'cartridgeLoaded':[2,3001,'A',54321,3], 'survey':['MaNGA','MaNGA Stare']}
+apogeemangaDitherLoaded = {'cartridgeLoaded':[3,4000,'A',54321,4], 'survey':['APOGEE-2&MaNGA','MaNGA Dither']}
+apogeemangaStareLoaded = {'cartridgeLoaded':[3,4000,'A',54321,4], 'survey':['APOGEE-2&MaNGA','MaNGA Stare']}
+apogeeLeadLoaded = {'cartridgeLoaded':[3,4000,'A',54321,4], 'survey':['APOGEE-2&MaNGA','APOGEE Lead']}
 noDecenter = {'decenter':[0,'disabled',0,0,0,0,0]}
 yesDecenter = {'decenter':[0,'enabled',0,0,0,0,0]}
 guiderOn = {'guideState':['on']}
@@ -116,24 +119,31 @@ guiderState = {}
 guiderState['cartLoaded'] = merge_dicts(guiderOff,bossLoaded,mangaC)
 guiderState['bossLoaded'] = merge_dicts(guiderOff,bossLoaded,mangaC)
 guiderState['apogeeLoaded'] = merge_dicts(guiderOff,apogeeLoaded,mangaC)
-guiderState['mangaLoaded'] = merge_dicts(guiderOff,mangaLoaded,mangaC)
-guiderState['apogeemangaLoaded'] = merge_dicts(guiderOff,apogeemangaLoaded,mangaC)
+guiderState['mangaStareLoaded'] = merge_dicts(guiderOff,mangaDitherLoaded,mangaC)
+guiderState['mangaDitherLoaded'] = merge_dicts(guiderOff,mangaStareLoaded,mangaC)
+guiderState['apogeemangaDitherLoaded'] = merge_dicts(guiderOff,apogeemangaDitherLoaded,mangaC)
+guiderState['apogeemangaStareLoaded'] = merge_dicts(guiderOff,apogeemangaStareLoaded,mangaC)
+guiderState['apogeeLeadLoaded'] = merge_dicts(guiderOff,apogeeLeadLoaded,mangaC)
 guiderState['guiderOn'] = merge_dicts(guiderOn,bossLoaded,mangaC)
-guiderState['guiderOnDecenter'] = merge_dicts(guiderOn,mangaLoaded,mangaN)
+guiderState['guiderOnDecenter'] = merge_dicts(guiderOn,mangaDitherLoaded,mangaN)
 
 
 # platedb state setup
 bossPointing = {'pointingInfo':[1000,11,'A',10.,20.,1.,0.,5500,'BOSS','BOSS']}
-apogeePointing = {'pointingInfo':[2000,1,'A',20.,30.,2.,1.,10500,'APOGEE','APOGEE']}
-mangaPointing = {'pointingInfo':[3000,2,'A',30.,40.,3.,2.,5500,'MaNGA','MaNGA dither']}
-apogeemangaPointing = {'pointingInfo':[4000,3,'A',40.,50.,4.,3.,10500,'APOGEE-MANGA','APOGEE lead']}
-mangaapogeePointing = {'pointingInfo':[5000,4,'A',50.,60.,5.,4.,5500,'APOGEE-MaNGA','MaNGA dither']}
+apogeePointing = {'pointingInfo':[2000,1,'A',20.,30.,2.,1.,10500,'APOGEE-2','APOGEE']}
+mangaDitherPointing = {'pointingInfo':[3000,2,'A',30.,40.,3.,2.,5500,'MaNGA','MaNGA dither']}
+mangaStarePointing = {'pointingInfo':[3001,2,'A',30.,40.,3.,2.,5500,'MaNGA','MaNGA Stare']}
+apogeeLeadPointing = {'pointingInfo':[4000,3,'A',40.,50.,4.,3.,10500,'APOGEE2&MANGA','APOGEE lead']}
+apgoeemangaDitherPointing = {'pointingInfo':[5000,4,'A',50.,60.,5.,4.,5500,'APOGEE-2&MaNGA','MaNGA dither']}
+apogeemangaStarePointing = {'pointingInfo':[5001,4,'A',50.,60.,5.,4.,5500,'APOGEE-2&MaNGA','MaNGA Stare']}
 platedbState = {}
 platedbState['boss'] = merge_dicts(bossPointing)
 platedbState['apogee'] = merge_dicts(apogeePointing)
-platedbState['manga'] = merge_dicts(mangaPointing)
-platedbState['apogee_manga'] = merge_dicts(mangaapogeePointing)
-platedbState['manga_apogee'] = merge_dicts(apogeemangaPointing)
+platedbState['mangaDither'] = merge_dicts(mangaDitherPointing)
+platedbState['mangaStare'] = merge_dicts(mangaStarePointing)
+platedbState['apgoeemangaDither'] = merge_dicts(apgoeemangaDitherPointing)
+platedbState['apgoeemangaStare'] = merge_dicts(apogeemangaStarePointing)
+platedbState['apogeeLead'] = merge_dicts(apogeeLeadPointing)
 
 # gcamera state setup
 gcameraTempOk = {'cooler':[-40,-40,-40,80,1,'Correcting']}
