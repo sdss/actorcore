@@ -106,6 +106,8 @@ noDecenter = {'decenter':[0,'disabled',0,0,0,0,0]}
 yesDecenter = {'decenter':[0,'enabled',0,0,0,0,0]}
 guiderOn = {'guideState':['on']}
 guiderOff = {'guideState':['off']}
+guiderFailed = {'guideState':['failed']}
+guiderStopped = {'guideState':['stopped']}
 # The below was stolen from guiderActor.Commands.GuiderCommand
 mangaDithers = {'N':(-0.417, +0.721, 0.0),
                 'S':(-0.417, -0.721, 0.0),
@@ -200,14 +202,6 @@ class Cmd(object):
         
     def __repr__(self):
         return 'TestHelperCmdr-%s'%('finished' if self.finished else 'running')
-    
-    # Copied from opscore.actor.keyvar.py:CmdVar
-    @property
-    def lastReply(self):
-        """Return the last reply object, or None if no replies seen"""
-        if not self.replyList:
-            return None
-        return self.replyList[-1]
 
     def _msg(self,txt,level):
         if self.verbose:
@@ -273,22 +267,34 @@ class Cmd(object):
         with call_lock:
             return self._call(*args,**kwargs)
 
+    def check_fail(self,command):
+        """Return True if we should fail this command."""
+        if self.failOn is not None and command == self.failOn:
+            if self.failOnCount == 1:
+                self.didFail = True
+                return True
+            else:
+                self.failOnCount -= 1
+        return False
+
     def _call(self,*args,**kwargs):
         """Pretend to complete command successfully, or not. (not thread safe)"""
+        def _finish(didFail,args):
+            cmdVar = keyvar.CmdVar(args)
+            # see opscore.actor.keyvar.DoneCodes/FailCodes.
+            cmdVar.lastCode = 'F' if didFail else ':'
+            self.didFail = didFail
+            return cmdVar
+
+        didFail = False
+
         # for handling FakeThread stuff.
         if args:
             text = str(*args).strip()
             self._msg(text,'c')
-            if self.failOn is not None and command == self.failOn:
-                if self.failOnCount == 1:
-                    self.didFail = True
-                else:
-                    self.failOnCount -= 1
-                    self.didFail = False
-            else:
-                self.didFail = False
-            return self
-        
+            didFail = self.check_fail(command)
+            return _finish(didFail,args)
+
         # for handling "real" commands
         cmdStr = kwargs.get('cmdStr')
         timeLim = kwargs.get('timeLim',-1)
@@ -307,27 +313,26 @@ class Cmd(object):
         self._msg(text,'c')
         command = text.split('<<')[0].strip()
         self.calls.append(command)
-        if self.failOn is not None and command == self.failOn:
-            if self.failOnCount == 1:
-                self.didFail = True
-                return self
-            else:
-                self.failOnCount -= 1
-        
-        # Handle commands where we have to set a new state.
-        if actor == 'apogee':
-            self.apogee_succeed(*args,**kwargs)
-        elif actor == 'boss':
-            self.boss_succeed(*args,**kwargs)
-        elif actor == 'mcp':
-            self.mcp_succeed(*args,**kwargs)
-        elif actor == 'guider':
-            self.guider_succeed(*args,**kwargs)
+
+        if self.check_fail(command):
+            didFail = True
+            # handle commands where we have to do something with a failure.
+            if actor == 'guider':
+                self.guider_fail(**kwargs)
         else:
-            self.didFail = False
-        return self
+            # Handle commands where we have to set a new state or do something more complex.
+            if actor == 'apogee':
+                self.apogee_succeed(**kwargs)
+            elif actor == 'boss':
+                self.boss_succeed(**kwargs)
+            elif actor == 'mcp':
+                self.mcp_succeed(**kwargs)
+            elif actor == 'guider':
+                self.guider_succeed(**kwargs)
+
+        return _finish(didFail,kwargs)
     
-    def apogee_succeed(self,*args,**kwargs):
+    def apogee_succeed(self,**kwargs):
         """Handle apogee commands as successes, and update appropriate keywords."""
         cmdStr = kwargs.get('cmdStr')
         try:
@@ -344,7 +349,6 @@ class Cmd(object):
             print 'ValueError in apogee_succeed:',e
             self.didFail = True
         else:
-            self.didFail = False
             global globalModels
             globalModels['apogee'].keyVarDict[key].set(newVal[key])
 
@@ -380,13 +384,14 @@ class Cmd(object):
         newVal = {key:(name,'Reading',1,nReads)}
         return key,newVal
     
-    def boss_succeed(self,*args,**kwargs):
+    def boss_succeed(self,**kwargs):
         """Handle boss commands as successes, and remember if we need to readout."""
         cmdStr = kwargs.get('cmdStr')
         cmd = self.cParser.parse(cmdStr)
         if cmd.name == 'exposure':
             readout = 'readout' in cmd.keywords
             noreadout = 'noreadout' in cmd.keywords
+            # NOTE: trying to be explicit about the fail/success status here.
             if readout and self.bossNeedsReadout:
                 self.bossNeedsReadout = False
                 self.didFail = False
@@ -409,7 +414,7 @@ class Cmd(object):
             # any other boss commands just succeed.
             self.didFail = False
     
-    def mcp_succeed(self,*args,**kwargs):
+    def mcp_succeed(self,**kwargs):
         """Handle mcp commands as successes, and update appropriate keywords."""
         try:
             cmdStr = kwargs.get('cmdStr')
@@ -421,10 +426,8 @@ class Cmd(object):
                 result = self._do_lamp('hgCd',cmdStr.split('.')[-1])
             elif 'wht.' in cmdStr:
                 # these two lamps are always off. So do nothing.
-                self.didFail = False
                 return
             elif 'uv.' in cmdStr:
-                self.didFail = False
                 return
             elif 'ffs.' in cmdStr:
                 result = self._do_ffs(cmdStr.split('.')[-1])
@@ -439,7 +442,6 @@ class Cmd(object):
                 return
             else:
                 key,newVal = result
-            self.didFail = False
             global globalModels
             globalModels['mcp'].keyVarDict[key].set(newVal)
                 
@@ -473,8 +475,8 @@ class Cmd(object):
             raise ValueError('Unknown ffs state: %s'%state)
         return key,newVal
     
-    def guider_succeed(self,*args,**kwargs):
-        """Handle mcp commands as successes, and update appropriate keywords."""
+    def guider_succeed(self,**kwargs):
+        """Handle guider commands as successes, and update appropriate keywords."""
         cmdStr = kwargs.get('cmdStr')
         try:
             cmd = self.cParser.parse(cmdStr)
@@ -486,15 +488,15 @@ class Cmd(object):
                 # This keeps guiderThread happy:
                 self.replyList.append(messages.Reply('',[messages.Keyword('Timeout')]))
                 key,newVal = 'guideState',guiderOn
+                # guider on *should* fail, because
+                self.didFail = True
             elif cmd.name == 'off':
                 key,newVal = 'guideState',guiderOff
             elif cmd.name == 'flat':
                 time.sleep(1) # waiting a short bit helps with lamp timings.
-                self.didFail = False
                 return
             elif cmd.name in ("axes", "scale", "focus"):
                 # just succeed on axes clear.
-                self.didFail = False
                 return
             else:
                 raise ValueError("I don't know what to do with this: %s"%cmdStr)
@@ -502,10 +504,9 @@ class Cmd(object):
             print 'ValueError in guider_succeed:',e
             self.didFail = True
         else:
-            self.didFail = False
             global globalModels
             globalModels['guider'].keyVarDict[key].set(newVal[key])
-        
+    
     def _get_mangaDither(self,keywords):
         """Set a new mangaDither position."""
         key = 'decenter'
@@ -532,6 +533,18 @@ class Cmd(object):
         else:
             raise ValueError('Unknown decenter state: %s'%(state))
         return key,newVal
+
+    def guider_fail(self,**kwargs):
+        """Handle guider commands as failures, and update appropriate keywords."""
+        cmdStr = kwargs.get('cmdStr')
+        key = None
+        cmd = self.cParser.parse(cmdStr)
+        if cmd.name == 'on':
+            key,newVal = 'guideState',guiderFailed
+
+        if key != None:
+            global globalModels
+            globalModels['guider'].keyVarDict[key].set(newVal[key])
 
 
 class ActorTester(object):
