@@ -322,18 +322,20 @@ class Cmd(object):
         else:
             # Handle commands where we have to set a new state or do something more complex.
             if actor == 'apogee':
-                self.apogee_succeed(**kwargs)
+                didFail = self.apogee_succeed(**kwargs)
             elif actor == 'boss':
-                self.boss_succeed(**kwargs)
+                didFail = self.boss_succeed(**kwargs)
             elif actor == 'mcp':
-                self.mcp_succeed(**kwargs)
+                didFail = self.mcp_succeed(**kwargs)
             elif actor == 'guider':
-                self.guider_succeed(**kwargs)
+                didFail = self.guider_succeed(**kwargs)
 
         return _finish(didFail,kwargs)
     
     def apogee_succeed(self,**kwargs):
         """Handle apogee commands as successes, and update appropriate keywords."""
+
+        didFail = False
         cmdStr = kwargs.get('cmdStr')
         try:
             cmd = self.cParser.parse(cmdStr)
@@ -347,10 +349,12 @@ class Cmd(object):
                 raise ValueError("I don't know what to do with this: %s"%cmdStr)
         except ValueError as e:
             print 'ValueError in apogee_succeed:',e
-            self.didFail = True
+            didFail = True
         else:
             global globalModels
             globalModels['apogee'].keyVarDict[key].set(newVal[key])
+
+        return didFail
 
     def _get_dither(self,keywords):
         """Return the key/value pair for a requested new dither position."""
@@ -386,6 +390,9 @@ class Cmd(object):
     
     def boss_succeed(self,**kwargs):
         """Handle boss commands as successes, and remember if we need to readout."""
+
+        didFail = False
+
         cmdStr = kwargs.get('cmdStr')
         cmd = self.cParser.parse(cmdStr)
         if cmd.name == 'exposure':
@@ -394,28 +401,30 @@ class Cmd(object):
             # NOTE: trying to be explicit about the fail/success status here.
             if readout and self.bossNeedsReadout:
                 self.bossNeedsReadout = False
-                self.didFail = False
                 time.sleep(1) # waiting a short bit helps with lamp timings.
             elif readout and not self.bossNeedsReadout:
-                self.didFail = True
+                didFail = True
                 print "Error! boss says: No exposure to act on."
             elif not readout and self.bossNeedsReadout:
-                self.didFail = True
+                didFail = True
                 print "Error! Cannot take BOSS exposure: need to readout previous one!"
             elif noreadout:
                 self.bossNeedsReadout = True
-                self.didFail = False
                 time.sleep(1) # waiting a short bit helps with lamp timings.
             else:
                 self.bossNeedsReadout = False
-                self.didFail = False
                 time.sleep(1) # waiting a short bit helps with lamp timings.
         else:
             # any other boss commands just succeed.
-            self.didFail = False
+            didFail = False
+
+        return didFail
     
     def mcp_succeed(self,**kwargs):
         """Handle mcp commands as successes, and update appropriate keywords."""
+
+        didFail = False
+
         try:
             cmdStr = kwargs.get('cmdStr')
             if 'ff.' in cmdStr:
@@ -435,7 +444,7 @@ class Cmd(object):
                 raise ValueError('Unknown mcp command: %s'%cmdStr)
         except ValueError as e:
             print 'ValueError in mcp_succeed:',e
-            self.didFail = True
+            didFail = True
         else:
             if result is None:
                 # key was already newVal, so do nothing.
@@ -444,7 +453,9 @@ class Cmd(object):
                 key,newVal = result
             global globalModels
             globalModels['mcp'].keyVarDict[key].set(newVal)
-                
+
+        return didFail
+
     def _do_lamp(self,lamp,state):
         """
         Change lamp to new state.
@@ -477,6 +488,8 @@ class Cmd(object):
     
     def guider_succeed(self,**kwargs):
         """Handle guider commands as successes, and update appropriate keywords."""
+
+        didFail = False
         cmdStr = kwargs.get('cmdStr')
         try:
             cmd = self.cParser.parse(cmdStr)
@@ -489,7 +502,7 @@ class Cmd(object):
                 self.replyList.append(messages.Reply('',[messages.Keyword('Timeout')]))
                 key,newVal = 'guideState',guiderOn
                 # guider on *should* fail, because
-                self.didFail = True
+                didFail = True
             elif cmd.name == 'off':
                 key,newVal = 'guideState',guiderOff
             elif cmd.name == 'flat':
@@ -502,10 +515,12 @@ class Cmd(object):
                 raise ValueError("I don't know what to do with this: %s"%cmdStr)
         except ValueError as e:
             print 'ValueError in guider_succeed:',e
-            self.didFail = True
+            didFail = True
         else:
             global globalModels
             globalModels['guider'].keyVarDict[key].set(newVal[key])
+
+        return didFail
     
     def _get_mangaDither(self,keywords):
         """Set a new mangaDither position."""
