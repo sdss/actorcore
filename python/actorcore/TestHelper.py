@@ -8,16 +8,15 @@ import time
 import imp
 import inspect
 import logging
+
 import threading
-
 call_lock = threading.RLock()
-
-from actorcore import Actor
 
 import opscore.protocols.validation as validation
 from opscore.utility.qstr import qstr
 from opscore.actor import keyvar
-from opscore.protocols import keys,types,parser,messages
+from opscore.protocols import keys,parser,messages
+from opscore.utility.tback import tback
 
 # To allow fake-setting/handling of the various actor models.
 global globalModels
@@ -292,7 +291,7 @@ class Cmd(object):
         if args:
             text = str(*args).strip()
             self._msg(text,'c')
-            didFail = self.check_fail(command)
+            didFail = self.check_fail(text)
             return _finish(didFail,args)
 
         # for handling "real" commands
@@ -319,6 +318,8 @@ class Cmd(object):
             # handle commands where we have to do something with a failure.
             if actor == 'guider':
                 self.guider_fail(**kwargs)
+            if actor == 'boss':
+                self.boss_fail(**kwargs)
         else:
             # Handle commands where we have to set a new state or do something more complex.
             if actor == 'apogee':
@@ -388,6 +389,29 @@ class Cmd(object):
         newVal = {key:(name,'Reading',1,nReads)}
         return key,newVal
     
+    def _fake_boss_readout(self, cmd):
+        """Behave like the real camera regarding when readouts are allowed or not."""
+        didFail = False
+        readout = 'readout' in cmd.keywords
+        noreadout = 'noreadout' in cmd.keywords
+        # NOTE: try to be explicit about the fail/success status here.
+        if readout and self.bossNeedsReadout:
+            self.bossNeedsReadout = False
+            time.sleep(1) # waiting a short bit helps with lamp timings.
+        elif readout and not self.bossNeedsReadout:
+            didFail = True
+            self.error("Error! boss says: No exposure to act on.")
+        elif not readout and self.bossNeedsReadout:
+            didFail = True
+            self.error("Error! Cannot take BOSS exposure: need to readout previous one!")
+        elif noreadout:
+            self.bossNeedsReadout = True
+            time.sleep(1) # waiting a short bit helps with lamp timings.
+        else:
+            self.bossNeedsReadout = False
+            time.sleep(1) # waiting a short bit helps with lamp timings.
+        return didFail
+
     def boss_succeed(self,**kwargs):
         """Handle boss commands as successes, and remember if we need to readout."""
 
@@ -396,30 +420,21 @@ class Cmd(object):
         cmdStr = kwargs.get('cmdStr')
         cmd = self.cParser.parse(cmdStr)
         if cmd.name == 'exposure':
-            readout = 'readout' in cmd.keywords
-            noreadout = 'noreadout' in cmd.keywords
-            # NOTE: trying to be explicit about the fail/success status here.
-            if readout and self.bossNeedsReadout:
-                self.bossNeedsReadout = False
-                time.sleep(1) # waiting a short bit helps with lamp timings.
-            elif readout and not self.bossNeedsReadout:
-                didFail = True
-                print "Error! boss says: No exposure to act on."
-            elif not readout and self.bossNeedsReadout:
-                didFail = True
-                print "Error! Cannot take BOSS exposure: need to readout previous one!"
-            elif noreadout:
-                self.bossNeedsReadout = True
-                time.sleep(1) # waiting a short bit helps with lamp timings.
-            else:
-                self.bossNeedsReadout = False
-                time.sleep(1) # waiting a short bit helps with lamp timings.
+            didFail = self._fake_boss_readout(cmd)
         else:
             # any other boss commands just succeed.
             didFail = False
 
         return didFail
     
+    def boss_fail(self,**kwargs):
+        """Handle boss commands as failures, deal with readouts, and update appropriate keywords."""
+        cmdStr = kwargs.get('cmdStr')
+        cmd = self.cParser.parse(cmdStr)
+        if cmd.name == 'exposure':
+            self._fake_boss_readout(cmd)
+
+
     def mcp_succeed(self,**kwargs):
         """Handle mcp commands as successes, and update appropriate keywords."""
 
@@ -546,7 +561,7 @@ class Cmd(object):
         elif 'off' in keywords:
             newVal = noDecenter
         else:
-            raise ValueError('Unknown decenter state: %s'%(state))
+            raise ValueError('Unknown decenter state: %s'%(keywords))
         return key,newVal
 
     def guider_fail(self,**kwargs):
