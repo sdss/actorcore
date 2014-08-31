@@ -1,5 +1,5 @@
-setupRequired("opscore")
-setupOptional("RO")
+setupRequired(opscore)
+setupOptional(RO)
 
 # Just for stageManager bits
 setupOptional("tron")
