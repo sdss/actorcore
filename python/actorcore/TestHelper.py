@@ -200,7 +200,7 @@ class Cmd(object):
         self.bossNeedsReadout = False
         
     def __repr__(self):
-        return 'TestHelperCmdr-%s'%('finished' if self.finished else 'running')
+        return 'TestHelperCmdr-%s'%('finished' if self.finished else 'alive')
 
     def _msg(self,txt,level):
         if self.verbose:
@@ -221,6 +221,14 @@ class Cmd(object):
         self.messages = []
         self.calls = []
         self.replyList = []
+
+    def reset(self):
+        """Clear messages, reset finished state, etc."""
+        self.clear_msgs()
+        self.finished = False
+        self.nFinished = 0
+        self.didFail = False
+        self.bossNeedsReadout = False
 
     def inform(self,txt):
         self._msg(txt,'i')
