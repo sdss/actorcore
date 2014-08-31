@@ -157,16 +157,16 @@ bypasses = ["ffs", "ff_lamp", "hgcd_lamp", "ne_lamp", "axes",
             "slewToField","guiderDark"]
 sopNoBypass = {'bypassNames':bypasses,'bypassed':[0,]*len(bypasses)}
 sopEmptyCommands = {"surveyCommands":('gotoStow', 'gotoInstrumentChange')}
-sopBossCommands = {"surveyCommands":('gotoField','hartmann', 'doBossCalibs',
+sopBossCommands = {"surveyCommands":('gotoField', 'doBossCalibs',
                                       'doBossScience','gotoInstrumentChange')}
-sopMangaCommands = {"surveyCommands":('gotoField', 'hartmann', 'doBossCalibs',
+sopMangaCommands = {"surveyCommands":('gotoField', 'doBossCalibs',
                                       'doMangaDither', 'doMangaSequence',
                                       'gotoInstrumentChange')}
 sopApogeeCommands = {"surveyCommands":('gotoField', 'doApogeeScience',
                                        'doApogeeSkyFlats', 'gotoGangChange',
                                        'gotoInstrumentChange', 'doApogeeDomeFlat')}
 sopApogeeMangaCommands = {"surveyCommands":('gotoField',
-                                            'hartmann', 'doBossCalibs',
+                                            'doBossCalibs',
                                             'doApogeeMangaDither', 'doApogeeMangaSequence',
                                             'doApogeeSkyFlats', 'gotoGangChange',
                                             'gotoInstrumentChange', 'doApogeeDomeFlat')}
