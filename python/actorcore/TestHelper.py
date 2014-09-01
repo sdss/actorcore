@@ -288,6 +288,7 @@ class Cmd(object):
         """Pretend to complete command successfully, or not. (not thread safe)"""
         def _finish(didFail,args):
             cmdVar = keyvar.CmdVar(args)
+            cmdVar.replyList = self.replyList
             # see opscore.actor.keyvar.DoneCodes/FailCodes.
             cmdVar.lastCode = 'F' if didFail else ':'
             self.didFail = didFail
@@ -524,7 +525,8 @@ class Cmd(object):
                 # This keeps guiderThread happy:
                 self.replyList.append(messages.Reply('',[messages.Keyword('Timeout')]))
                 key,newVal = 'guideState',guiderOn
-                # guider on *should* fail, because
+                # guider on *should* fail, because it times out, since the command
+                # won't complete until the guider is turned off.
                 didFail = True
             elif cmd.name == 'off':
                 key,newVal = 'guideState',guiderOff
@@ -579,6 +581,9 @@ class Cmd(object):
         cmd = self.cParser.parse(cmdStr)
         if cmd.name == 'on':
             key,newVal = 'guideState',guiderFailed
+        if cmd.name == 'mangaDither':
+            # These usually timeout, so set a message thusly.
+            self.replyList.append(messages.Reply('',[messages.Keyword('Timeout')]))
 
         if key != None:
             global globalModels
