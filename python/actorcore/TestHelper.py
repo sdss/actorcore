@@ -156,20 +156,25 @@ bypasses = ["ffs", "ff_lamp", "hgcd_lamp", "ne_lamp", "axes",
             "brightPlate", "darkPlate", "gangCart", "gangPodium",
             "slewToField","guiderDark"]
 sopNoBypass = {'bypassNames':bypasses,'bypassed':[0,]*len(bypasses)}
-sopEmptyCommands = {"surveyCommands":('gotoStow', 'gotoInstrumentChange')}
+sopEmptyCommands = {"surveyCommands":('gotoStow', 'gotoInstrumentChange'),
+                    'survey':['UNKNOWN','None']}
 sopBossCommands = {"surveyCommands":('gotoField', 'doBossCalibs',
-                                      'doBossScience','gotoInstrumentChange')}
+                                      'doBossScience','gotoInstrumentChange'),
+                   'survey':['BOSS','None']}
 sopMangaCommands = {"surveyCommands":('gotoField', 'doBossCalibs',
                                       'doMangaDither', 'doMangaSequence',
-                                      'gotoInstrumentChange')}
+                                      'gotoInstrumentChange'),
+                    'survey':['MaNGA','MaNGA dither']}
 sopApogeeCommands = {"surveyCommands":('gotoField', 'doApogeeScience',
                                        'doApogeeSkyFlats', 'gotoGangChange',
-                                       'gotoInstrumentChange', 'doApogeeDomeFlat')}
+                                       'gotoInstrumentChange', 'doApogeeDomeFlat'),
+                   'survey':['APOGEE','None']}
 sopApogeeMangaCommands = {"surveyCommands":('gotoField',
                                             'doBossCalibs',
                                             'doApogeeMangaDither', 'doApogeeMangaSequence',
                                             'doApogeeSkyFlats', 'gotoGangChange',
-                                            'gotoInstrumentChange', 'doApogeeDomeFlat')}
+                                            'gotoInstrumentChange', 'doApogeeDomeFlat'),
+                          'survey':['APOGEE-2&MaNGA','APOGEE lead']}
 
 
 sopState = {}
@@ -256,12 +261,18 @@ class Cmd(object):
         return not self.finished
     
     def use_keywords(self,txt):
-        """Update a model keyword, given an inform-level output."""
-        key = 'surveyCommands'
-        if key in txt:
-            val = txt.split('=')[-1].split(', ')
-            global globalModels
-            globalModels['sop'].keyVarDict[key].set(val)
+        """
+        Update a model keyword, given an inform-level output.
+        NOTE: TBD: This is a stupid way of faking the parser, but I'll live with it for now.
+        """
+        keys = ('surveyCommands','survey')
+        for key in keys:
+            gotKey = txt.split('=')[0]
+            if key == gotKey:
+                val = txt.split('=')[-1].split(',')
+                global globalModels
+                val = [x.strip().strip('"') for x in val]
+                globalModels['sop'].keyVarDict[key].set(val)
 
     def call(self,*args,**kwargs):
         """
