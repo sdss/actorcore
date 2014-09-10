@@ -152,10 +152,12 @@ gcameraState = {}
 gcameraState['ok'] = merge_dicts(gcameraTempOk)
 
 # sop state setup
-bypasses = ["ffs", "ff_lamp", "hgcd_lamp", "ne_lamp", "axes",
-            "brightPlate", "darkPlate", "gangCart", "gangPodium",
-            "slewToField","guiderDark"]
-sopNoBypass = {'bypassNames':bypasses,'bypassed':[0,]*len(bypasses)}
+bypasses = ["ffs", "lamp_ff", "lamp_hgcd", "lamp_ne", "axes",
+            "isBoss", "isApogee",
+            "isMangaDither", "isMangaStare",
+            "isApogeeLead", "isApogeeMangaDither", "isApogeeMangaStare",
+            "gangCart", "gangPodium", "slewToField", "guiderDark"]
+sopNoBypass = {'bypassNames':bypasses,'bypassed':[0,]*len(bypasses), 'bypassedNames':[]}
 sopEmptyCommands = {"surveyCommands":('gotoStow', 'gotoInstrumentChange'),
                     'survey':['UNKNOWN','None']}
 sopBossCommands = {"surveyCommands":('gotoField', 'doBossCalibs',
