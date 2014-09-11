@@ -261,10 +261,10 @@ def plateCards(models, cmd):
         name = '0000-00000-00'
     
     try:
-        survey = models['guider'].keyVarDict['survey']
+        survey = models['sop'].keyVarDict['survey']
         plateType, surveyMode = survey
     except Exception as e:
-       plateType = "guider.survey Exception: %s"%e
+       plateType = "sop.survey Exception: %s"%e
     
     cards = []
     cards.append(makeCard(cmd, 'NAME', name, nameComment))
