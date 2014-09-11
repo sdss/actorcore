@@ -21,8 +21,7 @@ def makeCard(cmd, name, value, comment=''):
     """ Creates a pyfits Card. Does not raise exceptions. """
 
     try:
-        c = pyfits.Card(name, value, comment)
-        return (name, value, comment)
+        return pyfits.Card(name, value, comment)
     except:
         errStr = 'failed to make %s card from %s' % (name, value)
         cmd.warn('text=%s' % (qstr(errStr)))
@@ -371,7 +370,7 @@ def writeFits(cmd, hdu, directory, filename, doCompress=False, chmod=0444,
         else:
             outName = os.path.join(directory, filename)
         
-        logging.info("Writing %s (via %s)" % (outName, tempName))        
+        logging.info("Writing %s (via %s)" % (outName, tempName))
         hdu.writeto(tempFile, checksum=checksum, output_verify=output_verify)
         tempFile.flush()
         os.fsync(tempFile.fileno())
