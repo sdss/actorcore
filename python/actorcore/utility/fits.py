@@ -263,7 +263,8 @@ def plateCards(models, cmd):
         survey = models['sop'].keyVarDict['survey']
         plateType, surveyMode = survey
     except Exception as e:
-       plateType = "sop.survey Exception: %s"%e
+       plateType = "sop.survey %s: %s"%(type(e).__name__, e)
+       surveyMode = plateType
     
     cards = []
     cards.append(makeCard(cmd, 'NAME', name, nameComment))
