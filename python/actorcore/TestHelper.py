@@ -116,6 +116,7 @@ mangaN = {'mangaDither':['N'],'decenter':[0,'enabled',-0.417,+0.721,0,0,0]}
 mangaS = {'mangaDither':['S'],'decenter':[0,'enabled',-0.417,-0.721,0,0,0]}
 mangaE = {'mangaDither':['E'],'decenter':[0,'enabled',+0.833,0,0,0,0]}
 mangaC = {'mangaDither':['C'],'decenter':[0,'disabled',0,0,0,0,0]}
+mangaCenabled = {'mangaDither':['C'],'decenter':[0,'enabled',0,0,0,0,0]}
 guiderState = {}
 guiderState['cartLoaded'] = merge_dicts(guiderOff,bossLoaded,mangaC)
 guiderState['bossLoaded'] = merge_dicts(guiderOff,bossLoaded,mangaC)
@@ -422,10 +423,10 @@ class Cmd(object):
             time.sleep(1) # waiting a short bit helps with lamp timings.
         elif readout and not self.bossNeedsReadout:
             didFail = True
-            self.error("Error! boss says: No exposure to act on.")
+            self.error("Error!!! boss says: No exposure to act on.")
         elif not readout and self.bossNeedsReadout:
             didFail = True
-            self.error("Error! Cannot take BOSS exposure: need to readout previous one!")
+            self.error("Error!!! Cannot take BOSS exposure: need to readout previous one!")
         elif noreadout:
             self.bossNeedsReadout = True
             time.sleep(1) # waiting a short bit helps with lamp timings.
@@ -570,6 +571,8 @@ class Cmd(object):
             newVal = mangaS
         elif pos == 'E':
             newVal = mangaE
+        elif pos == 'C':
+            newVal = mangaCenabled
         else:
             raise ValueError("I don't know what to do with this mangaDither: %s"%keywords)
         global globalModels
