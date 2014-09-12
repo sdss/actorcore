@@ -81,16 +81,22 @@ bossState['aborted'] = merge_dicts(exposureAborted)
 
 
 # TCC state setup
+#NEWTCC: tccStatus is deprecated in the new TCC.
 tccBase = {'axisBadStatusMask':['0x00057800'], 'utc_TAI':[-35.0],
            'moveItems':[''], 'inst':['guider'], 'objName':[''],
-           'slewEnd':'', 'tccStatus':['',''],
+           'slewEnd':'', 'tccStatus':['HHH','NNN'],
            'objNetPos':[121.0, 0.0, 4908683470.64, 30.0, 0.0, 4908683470.64]}
+tccMoving = {'axisBadStatusMask':['0x00057800'], 'utc_TAI':[-35.0],
+             'moveItems':[''], 'inst':['guider'], 'objName':[''],
+             'slewEnd':'', 'tccStatus':['',''],
+             'objNetPos':[121.0, 0.0, 4908683470.64, 30.0, 0.0, 4908683470.64]}
 axisStat = {'azStat':[0]*4, 'altStat':[0]*4, 'rotStat':[0]*4}
 atStow = {'axePos':[121,15,0]}
 atGangChange = {'axePos':[121,45,0]}
 atInstChange = {'axePos':[0,90,0]}
 tccState = {}
 tccState['stopped'] = merge_dicts(tccBase, axisStat, atStow)
+tccState['moving'] = merge_dicts(tccMoving, axisStat, atStow)
 
 
 # guider state setup
