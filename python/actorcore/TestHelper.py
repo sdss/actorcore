@@ -556,6 +556,9 @@ class Cmd(object):
             elif cmd.name in ("axes", "scale", "focus"):
                 # just succeed on axes clear.
                 return
+            elif cmd.name == 'setRefractionBalance':
+                # just succeed
+                return
             else:
                 raise ValueError("I don't know what to do with this: %s"%cmdStr)
         except ValueError as e:
