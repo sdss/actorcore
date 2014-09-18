@@ -73,11 +73,12 @@ exposureIdle = {'exposureState':['IDLE',0,0]}
 exposureIntegrating = {'exposureState':['INTEGRATING',900,100]}
 exposureReading = {'exposureState':['READING',60,10]}
 exposureAborted = {'exposureState':['ABORTED',0,0]}
+bossExposureId = {"exposureId":[1234500,]}
 bossState = {}
-bossState['idle'] = merge_dicts(exposureIdle)
-bossState['integrating'] = merge_dicts(exposureIntegrating)
-bossState['reading'] = merge_dicts(exposureReading)
-bossState['aborted'] = merge_dicts(exposureAborted)
+bossState['idle'] = merge_dicts(exposureIdle, bossExposureId)
+bossState['integrating'] = merge_dicts(exposureIntegrating, bossExposureId)
+bossState['reading'] = merge_dicts(exposureReading, bossExposureId)
+bossState['aborted'] = merge_dicts(exposureAborted, bossExposureId)
 
 
 # TCC state setup
@@ -420,6 +421,10 @@ class Cmd(object):
     
     def _fake_boss_readout(self, cmd):
         """Behave like the real camera regarding when readouts are allowed or not."""
+
+        global globalModels
+        currentExpId = globalModels['boss'].keyVarDict['exposureId'].getValue()
+
         didFail = False
         readout = 'readout' in cmd.keywords
         noreadout = 'noreadout' in cmd.keywords
@@ -427,6 +432,7 @@ class Cmd(object):
         if readout and self.bossNeedsReadout:
             self.bossNeedsReadout = False
             time.sleep(1) # waiting a short bit helps with lamp timings.
+            globalModels['boss'].keyVarDict['exposureId'].set([currentExpId+1,])
         elif readout and not self.bossNeedsReadout:
             didFail = True
             self.error("Error!!! boss says: No exposure to act on.")
@@ -439,6 +445,7 @@ class Cmd(object):
         else:
             self.bossNeedsReadout = False
             time.sleep(1) # waiting a short bit helps with lamp timings.
+            globalModels['boss'].keyVarDict['exposureId'].set([currentExpId+1,])
         return didFail
 
     def boss_succeed(self,**kwargs):
@@ -713,6 +720,38 @@ class ActorTester(object):
         # tack on anything else that we missed.
         actual.extend(calls[n:])
         self.assertEqual(actual,expected)
+
+    def _load_cmd_calls(self,class_name):
+        """Load the cmd calls for this test class from cmd_calls/."""
+        cmdFile = os.path.join('cmd_calls',class_name+'.txt')
+        self.class_calls = {}
+        name = ''
+        # Don't like using re, but ConfigParser barfs on these sorts of files.
+        # Define a group on the stuff inside the brackets.
+        header = re.compile(r'\[(.*)\]')
+        with open(cmdFile) as f:
+            data = f.readlines()
+        for line in data:
+            line = line.strip()
+            if line == '':
+                # Blank lines either separate blocks, or new headers.
+                # assume a new block follows, and clean up later if necessary.
+                self.class_calls[name].append([])
+                continue
+            if line[0] == '#':
+                # Ignore comments.
+                continue
+            re_match = header.match(line)
+            if re_match:
+                # remove empty lists due to blank line separating test function headers
+                if name and self.class_calls[name] == []:
+                    self.class_calls[name].remove(-1)
+                name = re_match.groups(0)[0]
+                # NOTE: If this happens, then we've duplicated a cmd list.
+                assert name not in self.class_calls, "%s missing from cmd_calls: check for duplicates?"%name
+                self.class_calls[name] = [[]]
+            else:
+                self.class_calls[name][-1].append(line)
 
 
 #
