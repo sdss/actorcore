@@ -469,7 +469,9 @@ class Cmd(object):
         cmd = self.cParser.parse(cmdStr)
         if cmd.name == 'exposure':
             self._fake_boss_readout(cmd)
-
+        if cmd.name == 'moveColl':
+            self.replyList.append(messages.Reply('',[messages.Keyword('Timeout')]))
+            
 
     def mcp_succeed(self,**kwargs):
         """Handle mcp commands as successes, and update appropriate keywords."""
