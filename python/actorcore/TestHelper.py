@@ -337,7 +337,7 @@ class Cmd(object):
             cmdTxt = ' '.join((actor,cmd.string))
             other = '<<timeLim=%.1f>>'%(timeLim)
             text = ' '.join((cmdTxt,other))
-        except (parser.ParseError, AttributeError) as e:
+        except (parser.ParseError, AttributeError):
             text = baseText
         self._msg(text,'c')
         command = text.split('<<')[0].strip()
@@ -374,7 +374,7 @@ class Cmd(object):
                 key,newVal = self._get_dither(cmd.keywords)
             elif cmd.name == 'shutter':
                 key,newVal = self._get_shutter(cmd.keywords)
-            elif cmd.name == 'expose':
+            elif cmd.name == 'expose' and 'stop' not in cmd.keywords:
                 key,newVal = self._get_expose(cmd.keywords)
             else:
                 raise ValueError("I don't know what to do with this: %s"%cmdStr)
@@ -428,12 +428,13 @@ class Cmd(object):
         didFail = False
         readout = 'readout' in cmd.keywords
         noreadout = 'noreadout' in cmd.keywords
+        stop = ('stop' in cmd.keywords[0].name) or ('abort' in cmd.keywords[0].name)
         # NOTE: try to be explicit about the fail/success status here.
-        if readout and self.bossNeedsReadout:
+        if (readout or stop) and self.bossNeedsReadout:
             self.bossNeedsReadout = False
             time.sleep(1) # waiting a short bit helps with lamp timings.
             globalModels['boss'].keyVarDict['exposureId'].set([currentExpId+1,])
-        elif readout and not self.bossNeedsReadout:
+        elif (readout or stop) and not self.bossNeedsReadout:
             didFail = True
             self.error("Error!!! boss says: No exposure to act on.")
         elif not readout and self.bossNeedsReadout:
@@ -686,6 +687,7 @@ class ActorTester(object):
             errMsg = "%s doesn't have a cmd_calls definition!"%self.id()
             print("WARNING: %s"%errMsg)
             self.assertFalse(self.fail_on_no_cmd_calls,errMsg)
+
         self._check_levels(nCall, nInfo, nWarn, nErr)
         self.assertEqual(self.cmd.finished, finish)
         
