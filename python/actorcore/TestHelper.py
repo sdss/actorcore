@@ -662,21 +662,28 @@ class ActorTester(object):
                       ]
         self.actorState = ActorState(cmd=self.cmd,actor=self.name,models=models,modelParams=modelParams)
     
-    def _run_cmd(self,cmdStr,queue):
-        """Run the command in cmdStr on the current actor, and return the resutling msg."""
+    def _run_cmd(self, cmdStr, queue, empty=False):
+        """
+        Run the command in cmdStr on the current actor, and return its msg.
+        If empty is set, don't fail on an empty queue.
+        """
         self.cmd.rawCmd = cmdStr
         self.actor.runActorCmd(self.cmd)
         if queue is not None:
-            return self._queue_get(queue)
+            return self._queue_get(queue, empty)
         else:
             return None
     
-    def _queue_get(self,queue):
-        """Get a message off the queue, and fail with a message if there isn't one."""
+    def _queue_get(self, queue, empty=False):
+        """
+        Get a message off the queue, and fail with a message if there isn't one.
+        If empty is set, don't fail on an empty queue.
+        """
         try:
             return queue.get(timeout=self.timeout)
         except queue.Empty:
-            self.cmd.fail('No message on the queue!')
+            if not empty:
+                self.fail('No message on the reply queue!')
             return None
 
     def _check_cmd(self, nCall, nInfo, nWarn, nErr, finish, didFail=False, **kwargs):
