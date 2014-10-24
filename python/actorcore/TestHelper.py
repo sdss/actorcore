@@ -36,6 +36,7 @@ flatOff = {'ffLamp':[0]*4}
 othersOff = {'whtLampCommandedOn':[0],'uvLampCommandedOn':[0],}
 semaphoreGood = {'semaphoreOwner':['None']}
 semaphoreBad = {'semaphoreOwner':['SomeEvilGuy']}
+semaphoreTCC = {'semaphoreOwner':['TCC:0:0']}
 gangBad = {'apogeeGang':[1]}
 gangCart = {'apogeeGang':[2]}
 gangPodium = {'apogeeGang':[4]}
@@ -47,11 +48,14 @@ mcpState['boss_science'] = merge_dicts(ffsOpen,arcOff,flatOff,gangPodium)
 mcpState['apogee_science'] = merge_dicts(ffsOpen,arcOff,flatOff,gangCart)
 mcpState['all_off'] = merge_dicts(ffsClosed,arcOff,flatOff,gangPodium)
 mcpState['apogee_parked'] = merge_dicts(ffsClosed,arcOff,flatOff,gangCart)
+mcpState['bad_semaphore'] = merge_dicts(ffsClosed,arcOff,flatOff,gangCart)
+mcpState['tcc_semaphore'] = merge_dicts(ffsClosed,arcOff,flatOff,gangCart)
 # these lamps should always be off, so set them as such...
 for n in mcpState:
     mcpState[n].update(othersOff)
     mcpState[n].update(semaphoreGood)
-
+mcpState['bad_semaphore'].update(semaphoreBad)
+mcpState['tcc_semaphore'].update(semaphoreTCC)
 
 # APOGEE state setup
 ditherA = {'ditherPosition':[0,'A']}
@@ -91,13 +95,17 @@ tccMoving = {'axisBadStatusMask':['0x00057800'], 'utc_TAI':[-35.0],
              'moveItems':[''], 'inst':['guider'], 'objName':[''],
              'slewEnd':'', 'tccStatus':['',''],
              'objNetPos':[121.0, 0.0, 4908683470.64, 30.0, 0.0, 4908683470.64]}
-axisStat = {'azStat':[0]*4, 'altStat':[0]*4, 'rotStat':[0]*4}
+axisStatClear = {'azStat':[0]*4, 'altStat':[0]*4, 'rotStat':[0]*4}
+axisStatStopped = {'azStat':[0x2000]*4, 'altStat':[0x2000]*4, 'rotStat':[0x2000]*4}
+axisStatBad = {'azStat':[0x1800]*4, 'altStat':[0x1800]*4, 'rotStat':[0x1800]*4}
 atStow = {'axePos':[121,15,0]}
 atGangChange = {'axePos':[121,45,0]}
 atInstChange = {'axePos':[0,90,0]}
 tccState = {}
-tccState['stopped'] = merge_dicts(tccBase, axisStat, atStow)
-tccState['moving'] = merge_dicts(tccMoving, axisStat, atStow)
+tccState['stopped'] = merge_dicts(tccBase, axisStatStopped, atStow)
+tccState['halted'] = merge_dicts(tccBase, axisStatClear, atStow)
+tccState['moving'] = merge_dicts(tccMoving, axisStatClear, atStow)
+tccState['bad'] = merge_dicts(tccBase, axisStatBad, atStow)
 
 
 # guider state setup
@@ -494,6 +502,8 @@ class Cmd(object):
                 return
             elif 'ffs.' in cmdStr:
                 result = self._do_ffs(cmdStr.split('.')[-1])
+            elif 'sem.' in cmdStr:
+                result = semaphoreGood.items()[0]
             else:
                 raise ValueError('Unknown mcp command: %s'%cmdStr)
         except ValueError as e:
@@ -653,7 +663,7 @@ class ActorTester(object):
         models = ['mcp','apogee','tcc','guider','platedb','gcamera','sop','boss']
         modelParams = [mcpState['all_off'],
                        apogeeState['A_closed'],
-                       tccState['stopped'],
+                       tccState['halted'],
                        guiderState['bossLoaded'],
                        platedbState['boss'],
                        gcameraState['ok'],
