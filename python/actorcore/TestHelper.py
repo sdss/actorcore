@@ -8,6 +8,7 @@ import time
 import imp
 import inspect
 import logging
+import Queue
 
 import threading
 call_lock = threading.RLock()
@@ -700,7 +701,7 @@ class ActorTester(object):
         """
         try:
             return queue.get(timeout=self.timeout)
-        except queue.Empty:
+        except Queue.Empty:
             if not empty:
                 self.fail('No message on the reply queue!')
             return None
