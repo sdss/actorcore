@@ -572,13 +572,18 @@ class Cmd(object):
                 key,newVal = 'guideState',guiderOff
             elif cmd.name == 'flat':
                 time.sleep(1) # waiting a short bit helps with lamp timings.
-                return
+                return didFail
             elif cmd.name in ("axes", "scale", "focus"):
                 # just succeed on axes clear.
-                return
+                return False
             elif cmd.name == 'setRefractionBalance':
                 # just succeed
-                return
+                return False
+            elif cmd.name == 'loadCartridge':
+                global globalModels
+                globalModels['guider'].keyVarDict['cartridgeLoaded'].set(bossLoaded['cartridgeLoaded'])
+                globalModels['guider'].keyVarDict['survey'].set(bossLoaded['survey'])
+                return False
             else:
                 raise ValueError("I don't know what to do with this: %s"%cmdStr)
         except ValueError as e:
@@ -648,9 +653,13 @@ class ActorTester(object):
         self.timeout = 5
         # Set this to True to fail if there is no cmd_calls defined for that test.
         self.fail_on_no_cmd_calls = False
-        if not getattr(self,'test_calls',None):
+        # If we've read in a list of cmd_calls for this class, prep them for use!
+        if hasattr(self, 'class_calls'):
+            test_name = self.id().split('.')[-1]
+            self.test_calls = self.class_calls.get(test_name,None)
+        else:
             self.test_calls = []
-        
+
         try:
             if self.verbose:
                 print "\n" # newline after unittest's docstring printing.
