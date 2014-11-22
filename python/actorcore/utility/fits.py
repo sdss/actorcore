@@ -28,7 +28,10 @@ def makeCard(cmd, name, value, comment=''):
         return ('comment', errStr, '')
         
 def makeCardFromKey(cmd, keyDict, keyName, cardName, cnv=None, idx=None, comment='', onFail=None):
-    """ Creates a pyfits Card from a Key. Does not raise exceptions. """
+    """
+    Creates a pyfits Card from a Key. Does not raise exceptions.
+    If comment is None, use "keyName: keyDict[keyName].help" for the comment string.
+    """
 
     try:
         val = keyDict[keyName]
@@ -38,7 +41,7 @@ def makeCardFromKey(cmd, keyDict, keyName, cardName, cnv=None, idx=None, comment
         return makeCard(cmd, cardName, onFail, errStr)
 
     try:
-        if idx != None:
+        if idx is not None:
             val = val[idx]
         else:
             val = val.getValue()
@@ -48,7 +51,14 @@ def makeCardFromKey(cmd, keyDict, keyName, cardName, cnv=None, idx=None, comment
         cmd.warn('text=%s' % (qstr(errStr)))
         return makeCard(cmd, cardName, onFail, errStr)
 
-    if cnv != None:
+    if comment is None:
+        # try to use the help string from the keyVar.
+        try:
+            comment = '%s: %s'%(keyName, val.help)
+        except:
+            comment = ''
+
+    if cnv is not None:
         try:
             val = cnv(val)
         except Exception, e:
@@ -56,7 +66,7 @@ def makeCardFromKey(cmd, keyDict, keyName, cardName, cnv=None, idx=None, comment
                 (val, keyName, cardName, cnv, e)
             cmd.warn('text=%s' % (qstr(errStr)))
             return makeCard(cmd, cardName, onFail, errStr)
-        
+
     return makeCard(cmd, cardName, val, comment)
     
 def mcpCards(models, cmd=None):
@@ -89,9 +99,12 @@ def mcpCards(models, cmd=None):
 
 def apoCards(models, cmd=None):
     """ Return a list of pyfits Cards describing APO weather state. """
-
+    
     cards = []
     weatherDict = models['apo'].keyVarDict
+
+    cards.append(makeCardFromKey(cmd, models['apo'].keyVarDict, 'version', 'v_apo', comment='version of the current apoActor', onFail='Unknown'))
+
     keys = (('pressure', None, float),
             ('windd', None, float),
             ('winds', None, float),
@@ -99,6 +112,7 @@ def apoCards(models, cmd=None):
             ('gusts', None, float),
             ('airTempPT', 'airtemp', float),
             ('dpTempPT', 'dewpoint', float),
+            ('truss25m', 'trustemp', float),
             #('dpErrPT', None, str),
             ('humidity', None, float),
             ('dusta', None, float),
@@ -111,7 +125,7 @@ def apoCards(models, cmd=None):
             cardName = keyName
         cardName = cardName.upper()
         card = makeCardFromKey(cmd, weatherDict, keyName, cardName,
-                               comment='%s' % (keyName),
+                               comment=None,
                                cnv=cnv,
                                onFail='NaN')
         cards.append(card)
@@ -267,6 +281,8 @@ def plateCards(models, cmd):
        surveyMode = plateType
     
     cards = []
+    cards.append(makeCardFromKey(cmd, models['guider'].keyVarDict, 'version', 'v_guider', comment='version of the current guiderActor', onFail='Unknown'))
+    cards.append(makeCardFromKey(cmd, models['sop'].keyVarDict, 'version', 'v_sop', comment='version of the current sopActor', onFail='Unknown'))
     cards.append(makeCard(cmd, 'NAME', name, nameComment))
     cards.append(makeCard(cmd, 'PLATEID', plate, 'The currently loaded plate'))
     cards.append(makeCard(cmd, 'CARTID', cartridge, 'The currently loaded cartridge'))
@@ -284,13 +300,13 @@ def guiderCards(models, cmd):
     try:
         mangaDitherKey = models['guider'].keyVarDict['mangaDither']
         mangaDither = mangaDitherKey[0]
-    except Exception as e:
+    except:
         mangaDither = '??'
     
     try:
         decenterKey = models['guider'].keyVarDict['decenter']
         expid,enabled,ra,dec,rot,focus,scale = decenterKey
-    except Exception as e:
+    except:
         expid,enabled,ra,dec,rot,focus,scale = -1,'?',-1,-1,-1,-1,-1
     
     cards = []
