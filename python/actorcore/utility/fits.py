@@ -54,7 +54,11 @@ def makeCardFromKey(cmd, keyDict, keyName, cardName, cnv=None, idx=None, comment
     if comment is None:
         # try to use the help string from the keyVar.
         try:
-            comment = '%s: %s'%(keyName, val.help)
+            txt = val.help
+            # For single-value keys, the help is often at the Key level.
+            if txt is None:
+                txt = keyDict[keyName].key.help
+            comment = '%s: %s'%(keyName, txt)
         except:
             comment = ''
 
