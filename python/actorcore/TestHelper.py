@@ -102,11 +102,12 @@ axisStatBad = {'azStat':[0x1800]*4, 'altStat':[0x1800]*4, 'rotStat':[0x1800]*4}
 atStow = {'axePos':[121,15,0]}
 atGangChange = {'axePos':[121,45,0]}
 atInstChange = {'axePos':[0,90,0]}
+atSomeField = {'axePos':[12,34,56]}
 tccState = {}
 tccState['stopped'] = merge_dicts(tccBase, axisStatStopped, atStow)
-tccState['halted'] = merge_dicts(tccBase, axisStatClear, atStow)
-tccState['moving'] = merge_dicts(tccMoving, axisStatClear, atStow)
-tccState['bad'] = merge_dicts(tccBase, axisStatBad, atStow)
+tccState['halted'] = merge_dicts(tccBase, axisStatClear, atGangChange)
+tccState['moving'] = merge_dicts(tccMoving, axisStatClear, atSomeField)
+tccState['bad'] = merge_dicts(tccBase, axisStatBad, atInstChange)
 
 
 # guider state setup
@@ -331,6 +332,7 @@ class Cmd(object):
             text = str(*args).strip()
             self._msg(text,'c')
             didFail = self.check_fail(text)
+            self.calls.append(text)
             return _finish(didFail,args)
 
         # for handling "real" commands
@@ -700,7 +702,7 @@ class ActorTester(object):
         If empty is set, don't fail on an empty queue.
         """
         try:
-            return queue.get(timeout=self.timeout)
+            return queue.get(timeout=1) # short timeout, so we don't have to wait.
         except Queue.Empty:
             if not empty:
                 self.fail('No message on the reply queue!')
