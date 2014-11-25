@@ -108,6 +108,7 @@ tccState['stopped'] = merge_dicts(tccBase, axisStatStopped, atStow)
 tccState['halted'] = merge_dicts(tccBase, axisStatClear, atGangChange)
 tccState['moving'] = merge_dicts(tccMoving, axisStatClear, atSomeField)
 tccState['bad'] = merge_dicts(tccBase, axisStatBad, atInstChange)
+tccState['halted_low'] = merge_dicts(tccBase, axisStatClear, atStow)
 
 
 # guider state setup
