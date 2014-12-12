@@ -93,13 +93,15 @@ tccBase = {'axisBadStatusMask':['0x00057800'], 'utc_TAI':[-35.0],
            'slewEnd':'', 'tccStatus':['HHH','NNN'],
            'objNetPos':[121.0, 0.0, 4908683470.64, 30.0, 0.0, 4908683470.64]}
 tccMoving = {'axisBadStatusMask':['0x00057800'], 'utc_TAI':[-35.0],
-             'moveItems':[''], 'inst':['guider'], 'objName':[''],
-             'slewEnd':'', 'tccStatus':['',''],
+             'moveItems':['YYYYYYYYY'], 'inst':['guider'], 'objName':[''],
+             'slewEnd':'', 'tccStatus':['',''],'slewBeg':[4908683470.64],
              'objNetPos':[121.0, 0.0, 4908683470.64, 30.0, 0.0, 4908683470.64]}
 axisStatClear = {'azStat':[0]*4, 'altStat':[0]*4, 'rotStat':[0]*4}
 axisStatStopped = {'azStat':[0x2000]*4, 'altStat':[0x2000]*4, 'rotStat':[0x2000]*4}
 axisStatBad = {'azStat':[0x1800]*4, 'altStat':[0x1800]*4, 'rotStat':[0x1800]*4}
-atStow = {'axePos':[121,15,0]}
+axisStatBadAz = {'azStat':[0x1800]*4, 'altStat':[0x0]*4, 'rotStat':[0x0]*4}
+atStow = {'axePos':[121,30,0]}
+atAlt15 = {'axePos':[121,15,0]}
 atGangChange = {'axePos':[121,45,0]}
 atInstChange = {'axePos':[0,90,0]}
 atSomeField = {'axePos':[12,34,56]}
@@ -108,7 +110,8 @@ tccState['stopped'] = merge_dicts(tccBase, axisStatStopped, atStow)
 tccState['halted'] = merge_dicts(tccBase, axisStatClear, atGangChange)
 tccState['moving'] = merge_dicts(tccMoving, axisStatClear, atSomeField)
 tccState['bad'] = merge_dicts(tccBase, axisStatBad, atInstChange)
-tccState['halted_low'] = merge_dicts(tccBase, axisStatClear, atStow)
+tccState['halted_low'] = merge_dicts(tccBase, axisStatBadAz, atAlt15)
+tccState['badAz'] = merge_dicts(tccBase, axisStatBadAz, atStow)
 
 
 # guider state setup
