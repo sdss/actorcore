@@ -385,12 +385,16 @@ class Cmd(object):
         cmdStr = kwargs.get('cmdStr')
         try:
             cmd = self.cParser.parse(cmdStr)
+            stop = ('stop' in cmd.keywords[0].name) or ('abort' in cmd.keywords[0].name)
             if cmd.name == 'dither':
                 key,newVal = self._get_dither(cmd.keywords)
             elif cmd.name == 'shutter':
                 key,newVal = self._get_shutter(cmd.keywords)
-            elif cmd.name == 'expose' and 'stop' not in cmd.keywords:
+            elif cmd.name == 'expose' and not stop:
                 key,newVal = self._get_expose(cmd.keywords)
+            elif cmd.name == 'expose' and stop:
+                # Don't worry about state, just succeed at stopping.
+                return didFail
             else:
                 raise ValueError("I don't know what to do with this: %s"%cmdStr)
         except ValueError as e:
@@ -673,6 +677,8 @@ class ActorTester(object):
         except NameError:
             self.verbose = False
         
+        self.longMessage=True # appends custom assert messages to the default text (very useful!)
+
         self.cmd = Cmd(verbose=self.verbose)
         
         # default status for some actors
