@@ -89,29 +89,33 @@ bossState['aborted'] = merge_dicts(exposureAborted, bossExposureId)
 # TCC state setup
 #NEWTCC: tccStatus is deprecated in the new TCC.
 tccBase = {'axisBadStatusMask':['0x00057800'], 'utc_TAI':[-35.0],
-           'moveItems':[''], 'inst':['guider'], 'objName':[''],
-           'slewEnd':'', 'tccStatus':['HHH','NNN'],
+           'moveItems':[''], 'inst':['guider'], 'objName':[''], 'slewEnd':'',
            'objNetPos':[121.0, 0.0, 4908683470.64, 30.0, 0.0, 4908683470.64]}
 tccMoving = {'axisBadStatusMask':['0x00057800'], 'utc_TAI':[-35.0],
              'moveItems':['YYYYYYYYY'], 'inst':['guider'], 'objName':[''],
-             'slewEnd':'', 'tccStatus':['',''],'slewBeg':[4908683470.64],
+             'slewEnd':'','slewBeg':[4908683470.64],
              'objNetPos':[121.0, 0.0, 4908683470.64, 30.0, 0.0, 4908683470.64]}
 axisStatClear = {'azStat':[0]*4, 'altStat':[0]*4, 'rotStat':[0]*4}
 axisStatStopped = {'azStat':[0x2000]*4, 'altStat':[0x2000]*4, 'rotStat':[0x2000]*4}
 axisStatBad = {'azStat':[0x1800]*4, 'altStat':[0x1800]*4, 'rotStat':[0x1800]*4}
 axisStatBadAz = {'azStat':[0x1800]*4, 'altStat':[0x0]*4, 'rotStat':[0x0]*4}
+axisCmdState_halted = {'axisCmdState':['Halted','Halted','Halted']}
+axisCmdState_azhalted = {'axisCmdState':['Slewing','Slewing','Halted']}
+axisCmdState_slewing = {'axisCmdState':['Slewing','Slewing','Slewing']}
+axisCmdState_tracking = {'axisCmdState':['Tracking','Tracking','Tracking']}
 atStow = {'axePos':[121,30,0]}
 atAlt15 = {'axePos':[121,15,0]}
 atGangChange = {'axePos':[121,45,0]}
 atInstChange = {'axePos':[0,90,0]}
 atSomeField = {'axePos':[12,34,56]}
 tccState = {}
-tccState['stopped'] = merge_dicts(tccBase, axisStatStopped, atStow)
-tccState['halted'] = merge_dicts(tccBase, axisStatClear, atGangChange)
-tccState['moving'] = merge_dicts(tccMoving, axisStatClear, atSomeField)
-tccState['bad'] = merge_dicts(tccBase, axisStatBad, atInstChange)
-tccState['halted_low'] = merge_dicts(tccBase, axisStatBadAz, atAlt15)
-tccState['badAz'] = merge_dicts(tccBase, axisStatBadAz, atStow)
+tccState['stopped'] = merge_dicts(tccBase, axisStatStopped, atStow, axisCmdState_halted)
+tccState['halted'] = merge_dicts(tccBase, axisStatClear, atGangChange, axisCmdState_halted)
+tccState['tracking'] = merge_dicts(tccMoving, axisStatClear, atSomeField, axisCmdState_tracking)
+tccState['slewing'] = merge_dicts(tccMoving, axisStatClear, atSomeField, axisCmdState_slewing)
+tccState['bad'] = merge_dicts(tccBase, axisStatBad, atInstChange, axisCmdState_halted)
+tccState['halted_low'] = merge_dicts(tccBase, axisStatBadAz, atAlt15, axisCmdState_halted)
+tccState['badAz'] = merge_dicts(tccBase, axisStatBadAz, atStow, axisCmdState_azhalted)
 
 
 # guider state setup
@@ -375,6 +379,8 @@ class Cmd(object):
                 didFail = self.mcp_succeed(**kwargs)
             elif actor == 'guider':
                 didFail = self.guider_succeed(**kwargs)
+            elif actor == 'tcc':
+                didFail = self.tcc_succeed(**kwargs)
 
         return _finish(didFail,kwargs)
     
@@ -491,7 +497,29 @@ class Cmd(object):
             self._fake_boss_readout(cmd)
         if cmd.name == 'moveColl':
             self.replyList.append(messages.Reply('',[messages.Keyword('Timeout')]))
-            
+
+    def tcc_succeed(self,**kwargs):
+        """Handle tcc commands as successes, and update appropriate keywords."""
+        didFail = False
+        try:
+            cmdStr = kwargs.get('cmdStr')
+            if 'track' in cmdStr:
+                result = 'axisCmdState', axisCmdState_tracking
+            else:
+                result = None
+        except ValueError as e:
+            print 'ValueError in tcc_succeed:',e
+            didFail = True
+        else:
+            if result is None:
+                # key was already newVal, so do nothing.
+                return didFail
+            else:
+                key,newVal = result
+            global globalModels
+            globalModels['tcc'].keyVarDict[key].set(newVal[key])
+
+        return didFail
 
     def mcp_succeed(self,**kwargs):
         """Handle mcp commands as successes, and update appropriate keywords."""
@@ -523,7 +551,7 @@ class Cmd(object):
         else:
             if result is None:
                 # key was already newVal, so do nothing.
-                return
+                return didFail
             else:
                 key,newVal = result
             global globalModels
