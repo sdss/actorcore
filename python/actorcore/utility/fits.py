@@ -232,19 +232,19 @@ def tccCards(models, cmd=None):
                                  onFail='NaN'))
     try:
         secOrient = tccDict['secOrient']
-        orientNames = ('piston','xtilt','ytilt','xtran', 'ytran')
+        orientNames = ('piston', 'xtilt', 'ytilt', 'xtran', 'ytran', 'zrot')
         for i in range(len(orientNames)):
             cards.append(makeCard(cmd, 'M2'+orientNames[i], float(secOrient[i]), 'TCC SecOrient'))
-    except Exception, e:
-        cmd.warn("failed to generate the SecOrient cards: %s" % (e))
+    except Exception as e:
+        cmd.warn("text='failed to generate the SecOrient cards: %s'" % (e))
 
     try:
         primOrient = tccDict['primOrient']
-        orientNames = ('piston','xtilt','ytilt','xtran', 'ytran')
+        orientNames = ('piston', 'xtilt', 'ytilt', 'xtran', 'ytran','zrot')
         for i in range(len(orientNames)):
             cards.append(makeCard(cmd, 'M1'+orientNames[i], float(primOrient[i]), 'TCC PrimOrient'))
-    except Exception, e:
-        cmd.warn("failed to generate the PrimOrient cards: %s" % (e))
+    except Exception as e:
+        cmd.warn("text='failed to generate the PrimOrient cards: %s'" % (e))
 
     cards.append(makeCardFromKey(cmd, tccDict, 'scaleFac', 'SCALE',
                                  idx=0, cnv=float,
