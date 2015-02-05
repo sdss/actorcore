@@ -203,10 +203,27 @@ sopApogeeMangaCommands = {"surveyCommands":('gotoField',
                                             'doApogeeSkyFlats', 'gotoGangChange',
                                             'gotoInstrumentChange', 'doApogeeDomeFlat'),
                           'survey':['APOGEE-2&MaNGA','APOGEE lead']}
-
-
 sopState = {}
 sopState['ok'] = merge_dicts(sopNoBypass,sopEmptyCommands)
+
+
+
+# apo state setup
+weather = {'pressure':[2],
+           'windd':[2],
+           'winds':[2],
+           'gustd':[2],
+           'gusts':[2],
+           'airTempPT':[2],
+           'dpTempPT':[2],
+           'truss25m':[2],
+           'humidity':[2],
+           'dusta':[2],
+           'dustb':[2],
+           'windd25m':[2],
+           'winds25m':[2]}
+apoState = {}
+apoState['default'] = merge_dicts(weather)
 
 class Cmd(object):
     """
@@ -710,7 +727,7 @@ class ActorTester(object):
         self.cmd = Cmd(verbose=self.verbose)
         
         # default status for some actors
-        models = ['mcp','apogee','tcc','guider','platedb','gcamera','sop','boss']
+        models = ['mcp','apogee','tcc','guider','platedb','gcamera','sop','boss','apo']
         modelParams = [mcpState['all_off'],
                        apogeeState['A_closed'],
                        tccState['halted'],
@@ -718,7 +735,8 @@ class ActorTester(object):
                        platedbState['boss'],
                        gcameraState['ok'],
                        sopState['ok'],
-                       bossState['idle']
+                       bossState['idle'],
+                       apoState['default']
                       ]
         self.actorState = ActorState(cmd=self.cmd,actor=self.name,models=models,modelParams=modelParams)
     
