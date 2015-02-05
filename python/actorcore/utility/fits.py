@@ -195,7 +195,6 @@ def tccCards(models, cmd=None):
 
     offsets = (('boresight', 'BOREOFF', 'TCC Boresight offset, deg', False),
                ('objArcOff', 'ARCOFF',  'TCC ObjArcOff, deg', False),
-               ('objOff',    'OBJOFF',  'TCC ObjOff, deg', False),
                ('calibOff',  'CALOFF',  'TCC CalibOff, deg', True),
                ('guideOff',  'GUIDOFF', 'TCC GuideOff, deg', True))
     for tccKey, fitsName, comment, doRot in offsets:
