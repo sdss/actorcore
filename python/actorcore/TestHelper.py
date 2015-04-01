@@ -108,14 +108,17 @@ atAlt15 = {'axePos':[121,15,0]}
 atGangChange = {'axePos':[121,45,0]}
 atInstChange = {'axePos':[0,90,0]}
 atSomeField = {'axePos':[12,34,56]}
+noErrorCode = {'axisErrCode':["OK","OK","OK"]}
+haltedErrorCode = {'axisErrCode':["HaltRequested","HaltRequested","HaltRequested"]}
+haltedOneErrorCode = {'axisErrCode':["HaltRequested","OK","OK"]}
 tccState = {}
-tccState['stopped'] = merge_dicts(tccBase, axisStatStopped, atStow, axisCmdState_halted)
-tccState['halted'] = merge_dicts(tccBase, axisStatClear, atGangChange, axisCmdState_halted)
-tccState['tracking'] = merge_dicts(tccMoving, axisStatClear, atSomeField, axisCmdState_tracking)
-tccState['slewing'] = merge_dicts(tccMoving, axisStatClear, atSomeField, axisCmdState_slewing)
-tccState['bad'] = merge_dicts(tccBase, axisStatBad, atInstChange, axisCmdState_halted)
-tccState['halted_low'] = merge_dicts(tccBase, axisStatBadAz, atAlt15, axisCmdState_halted)
-tccState['badAz'] = merge_dicts(tccBase, axisStatBadAz, atStow, axisCmdState_azhalted)
+tccState['stopped'] = merge_dicts(tccBase, axisStatStopped, atStow, axisCmdState_halted, noErrorCode)
+tccState['halted'] = merge_dicts(tccBase, axisStatClear, atGangChange, axisCmdState_halted, haltedErrorCode)
+tccState['tracking'] = merge_dicts(tccMoving, axisStatClear, atSomeField, axisCmdState_tracking, noErrorCode)
+tccState['slewing'] = merge_dicts(tccMoving, axisStatClear, atSomeField, axisCmdState_slewing, noErrorCode)
+tccState['bad'] = merge_dicts(tccBase, axisStatBad, atInstChange, axisCmdState_halted, haltedErrorCode)
+tccState['halted_low'] = merge_dicts(tccBase, axisStatBadAz, atAlt15, axisCmdState_halted, haltedOneErrorCode)
+tccState['badAz'] = merge_dicts(tccBase, axisStatBadAz, atStow, axisCmdState_azhalted, haltedOneErrorCode)
 
 
 # guider state setup
