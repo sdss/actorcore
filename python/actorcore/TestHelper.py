@@ -385,22 +385,14 @@ class Cmd(object):
         if self.check_fail(command):
             didFail = True
             # handle commands where we have to do something with a failure.
-            if actor == 'guider':
-                self.guider_fail(**kwargs)
-            if actor == 'boss':
-                self.boss_fail(**kwargs)
+            fail_func = getattr(self,actor+'_fail',None)
+            if fail_func is not None:
+                fail_func(**kwargs)
         else:
             # Handle commands where we have to set a new state or do something more complex.
-            if actor == 'apogee':
-                didFail = self.apogee_succeed(**kwargs)
-            elif actor == 'boss':
-                didFail = self.boss_succeed(**kwargs)
-            elif actor == 'mcp':
-                didFail = self.mcp_succeed(**kwargs)
-            elif actor == 'guider':
-                didFail = self.guider_succeed(**kwargs)
-            elif actor == 'tcc':
-                didFail = self.tcc_succeed(**kwargs)
+            succeed_func = getattr(self,actor+'_succeed',None)
+            if succeed_func is not None:
+                didFail = succeed_func(**kwargs)
 
         return _finish(didFail,kwargs)
     
