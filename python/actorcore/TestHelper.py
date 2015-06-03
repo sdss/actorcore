@@ -131,8 +131,8 @@ apogeemangaStareLoaded = {'cartridgeLoaded':[3,4000,'A',54321,4], 'survey':['APO
 apogeeLeadLoaded = {'cartridgeLoaded':[3,4000,'A',54321,4], 'survey':['APOGEE-2&MaNGA','APOGEE Lead']}
 noDecenter = {'decenter':[0,'disabled',0,0,0,0,0]}
 yesDecenter = {'decenter':[0,'enabled',0,0,0,0,0]}
-guiderOn = {'guideState':['on']}
-guiderOff = {'guideState':['off']}
+guiderOn = {'guideState':['on'], 'file':['/tmp/','proc-gimg-1234.fits.gz']}
+guiderOff = {'guideState':['off'], 'file':['/tmp/','proc-gimg-6789.fits.gz']}
 guiderFailed = {'guideState':['failed']}
 guiderStopped = {'guideState':['stopped']}
 # The below was stolen from guiderActor.Commands.GuiderCommand
@@ -177,8 +177,14 @@ platedbState['apogeeLead'] = merge_dicts(apogeeLeadPointing)
 
 # gcamera state setup
 gcameraTempOk = {'cooler':[-40,-40,-40,80,1,'Correcting']}
+gcameraSeqNo = {'nextSeqno':[1234], 'filename':['/data/gcam/54321/gimg-1234.fits.gz']}
+gcameraSimulatingOff = {'simulating':['Off','',0]}
 gcameraState = {}
-gcameraState['ok'] = merge_dicts(gcameraTempOk)
+gcameraState['ok'] = merge_dicts(gcameraTempOk,gcameraSeqNo,gcameraSimulatingOff)
+
+# ecamera state setup: just like the gcamera, but different name.
+ecameraState = {}
+ecameraState['ok'] = merge_dicts(gcameraTempOk,gcameraSeqNo,gcameraSimulatingOff)
 
 # sop state setup
 bypasses = ["ffs", "lamp_ff", "lamp_hgcd", "lamp_ne", "axes",
@@ -348,6 +354,10 @@ class Cmd(object):
         def _finish(didFail,args):
             cmdVar = keyvar.CmdVar(args)
             cmdVar.replyList = self.replyList
+            # we were supposed to monitor a keyword, so put something on the stack in response.
+            for kv in args['keyVars']:
+                cmdVar.keyVarDataDict[kv] = []
+                cmdVar.keyVarDataDict[kv].append(kv.valueList)
             # see opscore.actor.keyvar.DoneCodes/FailCodes.
             cmdVar.lastCode = 'F' if didFail else ':'
             self.didFail = didFail
@@ -635,6 +645,9 @@ class Cmd(object):
                 globalModels['guider'].keyVarDict['cartridgeLoaded'].set(bossLoaded['cartridgeLoaded'])
                 globalModels['guider'].keyVarDict['survey'].set(bossLoaded['survey'])
                 return False
+            elif cmd.name == 'makeMovie':
+                # just succeed
+                return True
             else:
                 raise ValueError("I don't know what to do with this: %s"%cmdStr)
         except ValueError as e:
@@ -722,18 +735,17 @@ class ActorTester(object):
         self.cmd = Cmd(verbose=self.verbose)
         
         # default status for some actors
-        models = ['mcp','apogee','tcc','guider','platedb','gcamera','sop','boss','apo']
-        modelParams = [mcpState['all_off'],
-                       apogeeState['A_closed'],
-                       tccState['halted'],
-                       guiderState['bossLoaded'],
-                       platedbState['boss'],
-                       gcameraState['ok'],
-                       sopState['ok'],
-                       bossState['idle'],
-                       apoState['default']
-                      ]
-        self.actorState = ActorState(cmd=self.cmd,actor=self.name,models=models,modelParams=modelParams)
+        models = {'mcp':mcpState['all_off'],
+                  'apogee':apogeeState['A_closed'],
+                  'tcc':tccState['halted'],
+                  'guider':guiderState['bossLoaded'],
+                  'platedb':platedbState['boss'],
+                  'gcamera':gcameraState['ok'],
+                  'ecamera':ecameraState['ok'],
+                  'sop':sopState['ok'],
+                  'boss':bossState['idle'],
+                  'apo':apoState['default']}
+        self.actorState = ActorState(cmd=self.cmd,actor=self.name,models=models.keys(),modelParams=models.values())
     
     def _run_cmd(self, cmdStr, queue, empty=False):
         """
@@ -876,8 +888,13 @@ class FakeActor(object):
     def sendVersionKey(self,cmd):
         cmd.inform("version=FAKE!")
     
+    def callCommand(self, cmdStr):
+        """Send ourselves a command, via a new cmd."""
+        self.newCmd = Cmd()
+        self.newCmd.call(actor=self.name, cmdStr=cmdStr)
+
     #
-    # the cmdSets stuff was lifted from actorcore/Actor.py
+    # this stuff was lifted from actorcore/Actor.py
     #
     def runActorCmd(self, cmd):
         try:
