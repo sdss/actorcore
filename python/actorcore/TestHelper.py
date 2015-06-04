@@ -355,9 +355,12 @@ class Cmd(object):
             cmdVar = keyvar.CmdVar(args)
             cmdVar.replyList = self.replyList
             # we were supposed to monitor a keyword, so put something on the stack in response.
-            for kv in args['keyVars']:
-                cmdVar.keyVarDataDict[kv] = []
-                cmdVar.keyVarDataDict[kv].append(kv.valueList)
+            try:
+                for kv in args.get('keyVars',[]):
+                    cmdVar.keyVarDataDict[kv] = []
+                    cmdVar.keyVarDataDict[kv].append(kv.valueList)
+            except AttributeError:
+                pass # this is a fake thread call, so just ignore keyVars trouble.
             # see opscore.actor.keyvar.DoneCodes/FailCodes.
             cmdVar.lastCode = 'F' if didFail else ':'
             self.didFail = didFail
