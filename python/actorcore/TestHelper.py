@@ -122,13 +122,13 @@ tccState['badAz'] = merge_dicts(tccBase, axisStatBadAz, atStow, axisCmdState_azh
 
 
 # guider state setup
-bossLoaded = {'cartridgeLoaded':[11,1000,'A',54321,1], 'survey':['BOSS','None']}
-apogeeLoaded = {'cartridgeLoaded':[1,2000,'A',54321,2], 'survey':['APOGEE','None']}
-mangaDitherLoaded = {'cartridgeLoaded':[2,3000,'A',54321,3], 'survey':['MaNGA','MaNGA Dither']}
-mangaStareLoaded = {'cartridgeLoaded':[2,3001,'A',54321,3], 'survey':['MaNGA','MaNGA Stare']}
-apogeemangaDitherLoaded = {'cartridgeLoaded':[3,4000,'A',54321,4], 'survey':['APOGEE-2&MaNGA','MaNGA Dither']}
-apogeemangaStareLoaded = {'cartridgeLoaded':[3,4000,'A',54321,4], 'survey':['APOGEE-2&MaNGA','MaNGA Stare']}
-apogeeLeadLoaded = {'cartridgeLoaded':[3,4000,'A',54321,4], 'survey':['APOGEE-2&MaNGA','APOGEE Lead']}
+bossLoaded = {'cartridgeLoaded':[11,1000,'A',54321,1], 'survey':['BOSS','None'], 'loadedNewCartridge':[]}
+apogeeLoaded = {'cartridgeLoaded':[1,2000,'A',54321,2], 'survey':['APOGEE','None'], 'loadedNewCartridge':[]}
+mangaDitherLoaded = {'cartridgeLoaded':[2,3000,'A',54321,3], 'survey':['MaNGA','MaNGA Dither'], 'loadedNewCartridge':[]}
+mangaStareLoaded = {'cartridgeLoaded':[2,3001,'A',54321,3], 'survey':['MaNGA','MaNGA Stare'], 'loadedNewCartridge':[]}
+apogeemangaDitherLoaded = {'cartridgeLoaded':[3,4000,'A',54321,4], 'survey':['APOGEE-2&MaNGA','MaNGA Dither'], 'loadedNewCartridge':[]}
+apogeemangaStareLoaded = {'cartridgeLoaded':[3,4000,'A',54321,4], 'survey':['APOGEE-2&MaNGA','MaNGA Stare'], 'loadedNewCartridge':[]}
+apogeeLeadLoaded = {'cartridgeLoaded':[3,4000,'A',54321,4], 'survey':['APOGEE-2&MaNGA','APOGEE Lead'], 'loadedNewCartridge':[]}
 noDecenter = {'decenter':[0,'disabled',0,0,0,0,0]}
 yesDecenter = {'decenter':[0,'enabled',0,0,0,0,0]}
 guiderOn = {'guideState':['on'], 'file':['/tmp/','proc-gimg-1234.fits.gz']}
