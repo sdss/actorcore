@@ -1,3 +1,10 @@
+"""
+Instrument Control Computer
+
+An ICC is a specialized actor with a controller that interfaces with a given
+instrument.
+"""
+
 from opscore.utility.qstr import qstr
 import opscore.utility.sdss3logging as opsLogging
 import logging
@@ -5,13 +12,12 @@ import logging
 import imp
 import os
 import sys
-import threading
 
-import actorcore.Actor as coreActor
+import actorcore.Actor
 
-class ICC(coreActor.Actor):
+class ICC(actorcore.Actor.Actor):
     def __init__(self, name, configFile, productName=None):
-        coreActor.Actor.__init__(self, name, configFile=configFile, productName=productName)
+        actorcore.Actor.Actor.__init__(self, name, configFile=configFile, productName=productName)
         
         # Create a separate logger for controller io
         opsLogging.makeOpsFileLogger(os.path.join(self.logDir, "io"), 'io')
@@ -43,7 +49,7 @@ class ICC(coreActor.Actor):
 
         # Instantiate and save a new controller. 
         self.logger.info('creating new %s (%08x)', name, id(mod))
-        exec('conn = mod.%s(self, "%s")' % (name, name))
+        conn = getattr(mod,name)(self, name)
 
         # If we loaded the module and the controller is already running, cleanly stop the old one. 
         if name in self.controllers:
@@ -80,7 +86,7 @@ class ICC(coreActor.Actor):
             controller.stop()
 
     def shutdown(self):
-        actorCore.Actor.shutdown(self)
+        actorcore.Actor.shutdown(self)
         
         self.stopAllControllers()
 
