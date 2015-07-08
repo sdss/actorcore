@@ -76,7 +76,8 @@ def listen(actor, port, interface=''):
     from twisted.internet import reactor
 
     mgr = CommandLinkManager(actor)
-    p = reactor.listenTCP(port, mgr, interface=interface)
+    port = reactor.listenTCP(port, mgr, interface=interface)
+    mgr.port = port
     return mgr
 
 def main():
