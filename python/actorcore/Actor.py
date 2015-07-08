@@ -84,16 +84,16 @@ class Msg(object):
 
 class ModLoader(object):
     def load_module(self, fullpath, name):
-        """ Try to load a named module in the given path. 
+        """ Try to load a named module in the given path.
  
-        The imp.find_module() docs give the following boring prescription: 
+        The imp.find_module() docs give the following boring prescription:
  
-          'This function does not handle hierarchical module names 
-          (names containing dots). In order to find P.M, that is, 
-          submodule M of package P, use find_module() and 
-          load_module() to find and load package P, and then use 
-          find_module() with the path argument set to P.__path__. When 
-          P itself has a dotted name, apply this recipe recursively.' 
+          'This function does not handle hierarchical module names
+          (names containing dots). In order to find P.M, that is,
+          submodule M of package P, use find_module() and
+          load_module() to find and load package P, and then use
+          find_module() with the path argument set to P.__path__. When
+          P itself has a dotted name, apply this recipe recursively.'
          """
 
         self.icclog.info("trying to load module path=%s name=%s", fullpath, name)
@@ -170,24 +170,24 @@ class Actor(object):
         self.logger.info('%s starting up....' % (name))
         self.parser = CommandParser()
 
-        # The list of all connected sources. 
-        tronInterface = self.config.get('tron', 'interface') 
-        tronPort = self.config.getint('tron', 'port') 
-        self.commandSources = cmdLinkManager.listen(self, 
-                                                    port=tronPort, 
-                                                    interface=tronInterface) 
-        # The Command which we send uncommanded output to. 
-        self.bcast = actorCmd.Command(self.commandSources, 
-                                      'self.0', 0, 0, None, immortal=True) 
+        # The list of all connected sources.
+        tronInterface = self.config.get('tron', 'interface')
+        tronPort = self.config.getint('tron', 'port')
+        self.commandSources = cmdLinkManager.listen(self,
+                                                    port=tronPort,
+                                                    interface=tronInterface)
+        # The Command which we send uncommanded output to.
+        self.bcast = actorCmd.Command(self.commandSources,
+                                      'self.0', 0, 0, None, immortal=True)
 
         # IDs to send commands to ourself.
-        self.selfCID = self.commandSources.fetchCid() 
+        self.selfCID = self.commandSources.fetchCid()
         self.synthMID = 1
 
-        # commandSets are the command handler packages. Each handles 
-        # a vocabulary, which it registers when loaded. 
-        # We gather them in one place mainly so that "meta-commands" (init, status) 
-        # can find the others. 
+        # commandSets are the command handler packages. Each handles
+        # a vocabulary, which it registers when loaded.
+        # We gather them in one place mainly so that "meta-commands" (init, status)
+        # can find the others.
         self.commandSets = {}
 
         self.logger.info("Creating validation handler...")
@@ -224,7 +224,7 @@ class Actor(object):
         opsLogging.setConsoleLevel(consoleLevel)
         
         # self.console needs to be renamed ore deleted, I think.
-        self.console = logging.getLogger('') 
+        self.console = logging.getLogger('')
         self.console.setLevel(int(self.config.get('logging','baseLevel')))
  
         self.logger = logging.getLogger('actor')
@@ -241,7 +241,7 @@ class Actor(object):
             cmd.inform('text="reconfigured logs"')
             
     def versionString(self, cmd):
-        """ Return the version key value. 
+        """ Return the version key value.
 
         If you simply want to generate the keyword, call .sendVersionKey().
         """
@@ -320,7 +320,7 @@ class Actor(object):
         # file.
         #
         # BAD problem here: the Keys define a single namespace. We need
-        # to check for conflicts and allow unloading. Right now we unilaterally 
+        # to check for conflicts and allow unloading. Right now we unilaterally
         # load the Keys and do not unload them if the validation fails.
         if hasattr(cmdSet, 'keys') and cmdSet.keys:
             keys.CmdKey.addKeys(cmdSet.keys)
@@ -438,7 +438,7 @@ class Actor(object):
 
         self.cmdLog.info('new cmd: %s' % (cmd))
         
-        # Empty cmds are OK; send an empty response... 
+        # Empty cmds are OK; send an empty response...
         if len(cmd.rawCmd) == 0:
             cmd.finish('')
             return None

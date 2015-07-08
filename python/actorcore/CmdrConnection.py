@@ -1,14 +1,12 @@
 import logging
 import threading
 import Queue
-import ConfigParser
 import sys
 
 from twisted.internet import reactor
 from twisted.internet.protocol import ReconnectingClientFactory
 from twisted.protocols.basic import LineReceiver
 
-import opscore.utility as opsUtils
 import opscore.actor.cmdkeydispatcher as opsDispatcher
 import opscore.actor.model as opsModel
 import opscore.actor.keyvar as opsKeyvar
@@ -200,7 +198,6 @@ class Cmdr(object):
         
 def liveTest():
     """ Connect to a running hub and print out all tcc traffic. """
-    import opscore.utility.sdss3logging
     import opscore.actor.keyvar as keyvar
     
     logger = logging.getLogger('test')
