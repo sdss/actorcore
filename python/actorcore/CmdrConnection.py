@@ -35,7 +35,7 @@ class CmdrConnection(LineReceiver):
         """ Main entry point for sending a command.
 
         Args:
-           c        - a Command to send
+           cmdstr (str): a Command to send
         """
         
         with self.lock:

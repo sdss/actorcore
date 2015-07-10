@@ -9,6 +9,7 @@ import imp
 import inspect
 import logging
 import Queue
+import StringIO
 
 import threading
 call_lock = threading.RLock()
@@ -591,6 +592,7 @@ class Cmd(object):
         Return the new key/value pair, or None if nothing is to be changed.
         """
         key = lamp+'Lamp'
+        global globalModels
         val = globalModels['mcp'].keyVarDict[key].getValue()
 
         if (state == 'on' and sum(val) == 4) or (state == 'off' and val == 0):
@@ -705,6 +707,50 @@ class Cmd(object):
         if key != None:
             global globalModels
             globalModels['guider'].keyVarDict[key].set(newVal[key])
+
+
+# Fake logging.
+# logBuffer is where the log will end up.
+class FakeFileStringIO(StringIO.StringIO):
+    """A StringIO that remembers a basedir."""
+    def __init__(self,basedir=None):
+        self.basedir = basedir
+        StringIO.StringIO.__init__(self)
+
+# NOTE: need this to be global, so I can grab it inside a test and check, e.g.
+# self.assertIn('toy starting up.',TestHelper.logBuffer.getvalue())
+global logBuffer
+logBuffer = None
+
+def setupRootLogger(basedir, level=logging.INFO, hackRollover=False):
+    """
+    Save all log output into a string for later searching.
+
+    When testing an Actor subclass, replace Actor.setupRootLogger as part of
+    your Test.setUpClass():
+        from actorcore import Actor
+        ....
+            Actor.setupRootLogger = TestHelper.setupRootLogger
+    """
+
+    # NOTE: need this to be global, so I can grab it inside a test.
+    global logBuffer
+    logBuffer = FakeFileStringIO(basedir=basedir)
+
+    rootHandler = logging.StreamHandler(logBuffer)
+    rootHandler.setLevel(logging.DEBUG)
+
+    rootLogger = logging.getLogger()
+    rootLogger.setLevel(level)
+    rootLogger.addHandler(rootHandler)
+
+    # disable stderr output
+    for h in rootLogger.handlers:
+        if isinstance(h, logging.StreamHandler) and h.stream == sys.stderr:
+            h.setLevel(logging.CRITICAL + 1)
+            rootLogger.removeHandler(h)
+
+    return rootLogger
 
 
 class ActorTester(object):
@@ -954,7 +1000,7 @@ class FakeActor(object):
                 file.close()
 
         # Instantiate and save a new command handler. 
-        exec('cmdSet = mod.%s(self)' % (cname))
+        cmdSet = getattr(mod,cname)(self)
 
         # Check any new commands before finishing with the load. This
         # is a bit messy, as the commands might depend on a valid

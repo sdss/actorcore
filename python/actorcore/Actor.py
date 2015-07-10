@@ -17,8 +17,6 @@ import re
 import inspect
 import traceback
 import sys
-import opscore.utility.sdss3logging as opsLogging
-import logging
 import os
 import Queue
 import ConfigParser
@@ -27,6 +25,9 @@ import abc
 import socket
 
 from twisted.internet import reactor
+
+from opscore.utility.sdss3logging import setupRootLogger, setConsoleLevel
+import logging
 
 import opscore
 from opscore.protocols.parser import CommandParser
@@ -111,7 +112,7 @@ class ModLoader(object):
                 mod = imp.load_module(pname, file, filename, description)
                 path = mod.__path__
                 parts = parts[1:]
-            except ImportError, e:
+            except ImportError as e:
                 raise
             finally:
                 file.close()
@@ -159,11 +160,7 @@ class Actor(object):
         self.configFile = configFile if configFile else \
             os.path.expandvars(os.path.join(self.product_dir, 'etc', '%s.cfg' % (self.name)))
 
-        # Missing config bits should make us blow up.
-        self.configFile = os.path.expandvars(self.configFile)
-        logging.warn("reading config file %s", self.configFile)
-        self.config = ConfigParser.ConfigParser()
-        self.config.read(self.configFile)
+        self.read_config_files()
 
         self.configureLogs()
 
@@ -207,6 +204,14 @@ class Actor(object):
         else:
             self.cmdr = None
 
+    def read_config_files(self):
+        """Read the config file(s) in etc/"""
+        # Missing config bits should make us blow up.
+        self.configFile = os.path.expandvars(self.configFile)
+        logging.warn("reading config file %s", self.configFile)
+        self.config = ConfigParser.ConfigParser()
+        self.config.read(self.configFile)
+
     def configureLogs(self, cmd=None):
         """ (re-)configure our logs. """
         
@@ -214,14 +219,14 @@ class Actor(object):
         assert self.logDir, "logdir must be set!"
 
         # Make the root logger go to a rotating file. All others derive from this.
-        opsLogging.setupRootLogger(self.logDir)
+        setupRootLogger(self.logDir)
 
         # The real stderr/console filtering is actually done through the console Handler.
         try:
             consoleLevel = int(self.config.get('logging','consoleLevel'))
         except:
             consoleLevel = int(self.config.get('logging','baseLevel'))
-        opsLogging.setConsoleLevel(consoleLevel)
+        setConsoleLevel(consoleLevel)
         
         # self.console needs to be renamed ore deleted, I think.
         self.console = logging.getLogger('')
@@ -305,7 +310,7 @@ class Actor(object):
             self.logger.debug("command set file=%s filename=%s from path %s",
                               file, filename, path)
             mod = imp.load_module(cname, file, filename, description)
-        except ImportError, e:
+        except ImportError as e:
             raise RuntimeError('Import of %s failed: %s' % (cname, e))
         finally:
             if file:
@@ -328,7 +333,7 @@ class Actor(object):
         for v in cmdSet.vocab:
             try:
                 verb, args, func = v
-            except ValueError, e:
+            except ValueError as e:
                 raise RuntimeError("vocabulary word needs three parts: %s" % (v))
 
             # Check that the function exists and get its help.
@@ -353,7 +358,7 @@ class Actor(object):
         """ (Re-)load all command classes -- files in ./Command which end with Cmd.py.
         """
 
-        if path == None:
+        if path is None:
             self.attachAllCmdSets(path=os.path.join(os.path.expandvars('$ACTORCORE_DIR'), 'python','actorcore','Commands'))
             self.attachAllCmdSets(path=os.path.join(self.product_dir, 'python', self.productName, 'Commands'))
             return
@@ -383,7 +388,7 @@ class Actor(object):
             
             try:
                 validatedCmd, cmdFuncs = self.handler.match(cmdStr)
-            except Exception, e:
+            except Exception as e:
                 cmd.fail('text=%s' % (qstr("Unmatched command: %s (exception: %s)" %
                                            (cmdStr, e))))
                     #tback('actor_loop', e)
@@ -401,13 +406,13 @@ class Actor(object):
                 cmd.cmd = validatedCmd
                 for func in cmdFuncs:
                     func(cmd)
-            except Exception, e:
+            except Exception as e:
                 oneLiner = self.cmdTraceback(e)
                 cmd.fail('text=%s' % (qstr("command failed: %s" % (oneLiner))))
                 #tback('newCmd', e)
                 return
                 
-        except Exception, e:
+        except Exception as e:
             cmd.fail('text=%s' % (qstr("completely unexpected exception when processing a new command: %s" %
                                        (e))))
             try:
@@ -474,7 +479,7 @@ class Actor(object):
                 threading.Thread(target=self.actor_loop).start()
             if doReactor:
                 reactor.run()
-        except Exception, e:
+        except Exception as e:
             tback('run', e)
 
         if doReactor:
@@ -508,11 +513,35 @@ class SDSSActor(Actor):
             return location
 
         if 'apo' in fqdn:
-            return 'apo'
+            return 'APO'
         elif 'lco' in fqdn:
-            return 'lco'
+            return 'LCO'
         else:
             return None
+
+    def read_config_files(self):
+        super(SDSSActor,self).read_config_files()
+        locationFile = '_'.join((os.path.splitext(self.configFile)[0],format(self.location))) + '.cfg'
+        self.config.read(locationFile)
+
+
+    def attachAllCmdSets(self, path=None):
+        """
+        (Re-)load all command classes -- files in ./Command which end with Cmd.py.
+        Also loads everything that ends with Cmd_'location'.py
+        """
+
+        super(SDSSActor,self).attachAllCmdSets(path)
+
+        if path is not None:
+            dirlist = os.listdir(path)
+            dirlist.sort()
+            self.logger.warn("loading %s" % (dirlist))
+
+            for f in dirlist:
+                if re.match('^[a-zA-Z][a-zA-Z0-9_-]*Cmd_{}\.py$'.format(self.location), f):
+                    self.attachCmdSet(f[:-3], [path])
+
 
     def run(self, Msg=None, startThreads=True, doReactor=True):
         """
@@ -538,7 +567,7 @@ class SDSSActor(Actor):
                 threading.Thread(target=self.actor_loop).start()
             if doReactor:
                 reactor.run()
-        except Exception, e:
+        except Exception as e:
             tback('run', e)
 
         if doReactor:
