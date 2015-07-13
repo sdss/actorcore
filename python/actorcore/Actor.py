@@ -132,6 +132,26 @@ class ModLoader(object):
             file.close()
 
 
+class ActorState(object):
+    """An object to hold globally useful state for an actor"""
+
+    def __init__(self, actor, models=None):
+        self.actor = actor
+        # NOTE: getattr is for running unittests;
+        # we don't create the Cmdr connection, so can't get its dispatcher.
+        self.dispatcher = getattr(self.actor.cmdr,'dispatcher',None)
+        if models is None:
+            models = {}
+        self.models = models
+        self.restartCmd = None
+        self.aborting = False
+        self.timeout = 10
+
+    def __str__(self):
+        msg = "{} {}".format(self.actor, self.actor.cmdr.dispatcher)
+        return msg
+
+
 class Actor(object):
     def __init__(self, name, productName=None, configFile=None,
                  makeCmdrConnection=True):
@@ -580,22 +600,20 @@ class SDSSActor(Actor):
         Start or restart the worker threads and queues.
 
         Args:
-            actorState: container for the current state of the class, to pass
-                messages between threads. Usually a class.
+            actorState (ActorState): container for the current state of the
+                class, to pass messages between threads, etc.
             Msg: static class defining messages that can be sent to this actor's queues.
 
         Kwargs:
             cmd (actorstate.Command): to send messages on.
-            restart (bool): restart all running threads adn clear all queues.
+            restart (bool): restart all running threads and clear all queues.
                 Implies restartQueues=True.
             restartQueues (bool): Create new empty queues for each thread.
         """
         actorState = self.actorState
 
-        try:
-            actorState.threads
-        except AttributeError:
-            restart = False
+        if getattr(actorState,"threads",None) is None:
+            restart = False # nothing to restart!
         
         if not restart:
             actorState.queues = {}
