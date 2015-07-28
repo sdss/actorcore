@@ -5,8 +5,6 @@ import sys
 import os
 import re
 import time
-import imp
-import inspect
 import logging
 import Queue
 import StringIO
@@ -14,11 +12,11 @@ import StringIO
 import threading
 call_lock = threading.RLock()
 
+from . import Actor
+
 import opscore.protocols.validation as validation
-from opscore.utility.qstr import qstr
 from opscore.actor import keyvar
 from opscore.protocols import keys,parser,messages
-from opscore.utility.tback import tback
 
 # To allow fake-setting/handling of the various actor models.
 global globalModels
@@ -922,17 +920,22 @@ class Model(object):
         return self.myKeys[name].typedValues.vtypes[0]
 #...
 
-class FakeActor(object):
-    """A massively stripped-down version of actorcore.Actor."""
+class FakeActor(Actor.Actor):
+    """An actor that doesn't do anything important during init()."""
     def __init__(self,name,productName=None):
         self.name = name
-        self.commandSets = {}
         self.productName = productName if productName else self.name
         product_dir_name = '$%s_DIR' % (self.productName.upper())
         self.product_dir = os.path.expandvars(product_dir_name)
+        self.cmdLog = logging.getLogger('cmds')
+        self.logger = logging.getLogger('logger')
+        # Disable logging to reduce clutter, since these are just
+        # here to keep attachAllCmdSets, etc. happy.
+        logging.disable(logging.CRITICAL)
+
+        self.commandSets = {}
         self.handler = validation.CommandHandler()
         self.attachAllCmdSets()
-        self.cmdLog = logging.getLogger('cmds')
     
     def sendVersionKey(self,cmd):
         cmd.inform("version=FAKE!")
@@ -942,116 +945,6 @@ class FakeActor(object):
         self.newCmd = Cmd()
         self.newCmd.call(actor=self.name, cmdStr=cmdStr)
 
-    #
-    # this stuff was lifted from actorcore/Actor.py
-    #
-    def runActorCmd(self, cmd):
-        try:
-            cmdStr = cmd.rawCmd
-            self.cmdLog.debug('raw cmd: %s' % (cmdStr))
-            
-            try:
-                validatedCmd, cmdFuncs = self.handler.match(cmdStr)
-            except Exception, e:
-                cmd.fail('text=%s' % (qstr("Unmatched command: %s (exception: %s)" %
-                                           (cmdStr, e))))
-                    #tback('actor_loop', e)
-                return
-            
-            if not validatedCmd:
-                cmd.fail('text=%s' % (qstr("Unrecognized command: %s" % (cmdStr))))
-                return
-            
-            self.cmdLog.info('< %s:%d %s' % (cmd.cmdr, cmd.mid, validatedCmd))
-            if len(cmdFuncs) > 1:
-                cmd.warn('text=%s' % (qstr("command has more than one callback (%s): %s" %
-                                           (cmdFuncs, validatedCmd))))
-            try:
-                cmd.cmd = validatedCmd
-                for func in cmdFuncs:
-                    func(cmd)
-            except Exception, e:
-                cmd.fail('text=%s' % (qstr("command failed: %s" % (e))))
-                #tback('newCmd', e)
-                return
-                
-        except Exception, e:
-            cmd.fail('text=%s' % (qstr("completely unexpected exception when processing a new command: %s" %
-                                       (e))))
-            try:
-                tback('newCmdFail', e)
-            except:
-                pass
-
-    def attachCmdSet(self, cname, path=None):
-        """ (Re-)load and attach a named set of commands. """
-
-        if path == None:
-            path = [os.path.join(self.product_dir, 'python', self.productName, 'Commands')]
-               
-        file = None
-        try:
-            file, filename, description = imp.find_module(cname, path)
-            mod = imp.load_module(cname, file, filename, description)
-        except ImportError, e:
-            raise RuntimeError('Import of %s failed: %s' % (cname, e))
-        finally:
-            if file:
-                file.close()
-
-        # Instantiate and save a new command handler. 
-        cmdSet = getattr(mod,cname)(self)
-
-        # Check any new commands before finishing with the load. This
-        # is a bit messy, as the commands might depend on a valid
-        # keyword dictionary, which also comes from the module
-        # file.
-        #
-        # BAD problem here: the Keys define a single namespace. We need
-        # to check for conflicts and allow unloading. Right now we unilaterally 
-        # load the Keys and do not unload them if the validation fails.
-        if hasattr(cmdSet, 'keys') and cmdSet.keys:
-            keys.CmdKey.addKeys(cmdSet.keys)
-        valCmds = []
-        for v in cmdSet.vocab:
-            try:
-                verb, args, func = v
-            except ValueError, e:
-                raise RuntimeError("vocabulary word needs three parts: %s" % (v))
-
-            # Check that the function exists and get its help.
-            #
-            funcDoc = inspect.getdoc(func)
-            valCmd = validation.Cmd(verb, args, help=funcDoc) >> func
-            valCmds.append(valCmd)
-
-        # Got this far? Commit. Save the Cmds so that we can delete them later.
-        oldCmdSet = self.commandSets.get(cname, None)
-        cmdSet.validatedCmds = valCmds
-        self.commandSets[cname] = cmdSet
-
-        # Delete previous set of consumers for this named CmdSet, add new ones.
-        if oldCmdSet:
-            self.handler.removeConsumers(*oldCmdSet.validatedCmds)
-        self.handler.addConsumers(*cmdSet.validatedCmds)
-        
-    def attachAllCmdSets(self, path=None):
-        """ (Re-)load all command classes -- files in ./Command which end with Cmd.py."""
-
-        if path == None:
-            self.attachAllCmdSets(path=os.path.join(os.path.expandvars('$ACTORCORE_DIR'), 'python','actorcore','Commands'))
-            self.attachAllCmdSets(path=os.path.join(self.product_dir, 'python', self.productName, 'Commands'))
-            return
-
-        dirlist = os.listdir(path)
-        dirlist.sort()
-
-        for f in dirlist:
-            if os.path.isdir(f) and not f.startswith('.'):
-                self.attachAllCmdSets(path=f)
-            if re.match('^[a-zA-Z][a-zA-Z0-9_-]*Cmd\.py$', f):
-                self.attachCmdSet(f[:-3], [path])
-                
 
 class ActorState(object):
     """
@@ -1070,9 +963,12 @@ class ActorState(object):
             Model.setDispatcher(cmd)
             self.dispatcherSet = True
         if actor is not None:
-            productName = ''
-            if actor not in ('mcp','tcc','boss'):
+            if actor in ('boss','gcamera'):
+                productName = actor+'ICC'
+            elif actor not in ('mcp','tcc'):
                 productName = actor+'Actor'
+            else:
+                productName = actor
             self.actor = FakeActor(actor,productName=productName)
             self.actor.bcast = cmd
             self.actor.cmdr = cmd

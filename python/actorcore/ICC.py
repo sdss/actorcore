@@ -16,8 +16,21 @@ import sys
 import actorcore.Actor
 
 class ICC(actorcore.Actor.Actor):
-    def __init__(self, name, configFile, productName=None):
-        actorcore.Actor.Actor.__init__(self, name, configFile=configFile, productName=productName)
+    def __init__(self, name, configFile, productName=None, makeCmdrConnection=True):
+        """
+        Create an ICC to communicate with an instrument.
+
+        Args:
+            name (str): the name we are advertised as to the hub.
+
+        Kwargs:
+            productName (str): the name of the product; defaults to name
+            configFile (str): the full path of the configuration file; defaults
+                to $PRODUCTNAME_DIR/etc/$name.cfg
+            makeCmdrConnection (bool): establish self.cmdr as a command connection to the hub.
+        """
+
+        actorcore.Actor.Actor.__init__(self, name, configFile=configFile, productName=productName, makeCmdrConnection=makeCmdrConnection)
         
         # Create a separate logger for controller io
         opsLogging.makeOpsFileLogger(os.path.join(self.logDir, "io"), 'io')
