@@ -510,7 +510,7 @@ class SDSSActor(Actor):
     """
     An actor that communicates with the hub, handles commands, knows its own location.
 
-    After subclassing it, create and start a new actor via:
+    After subclassing it and replacing newActor(), create and start a new actor via:
         someActor = someActor.newActor()
         someActor.run(someActor.Msg)
     """
@@ -543,7 +543,6 @@ class SDSSActor(Actor):
         super(SDSSActor,self).read_config_files()
         locationFile = '_'.join((os.path.splitext(self.configFile)[0],format(self.location))) + '.cfg'
         self.config.read(locationFile)
-
 
     def attachAllCmdSets(self, path=None):
         """
@@ -597,7 +596,7 @@ class SDSSActor(Actor):
 
     def startThreads(self, Msg, cmd=None, restart=False, restartQueues=False):
         """
-        Start or restart the worker threads and queues.
+        Start or restart the worker threads (from self.threadList) and queues.
 
         Args:
             actorState (ActorState): container for the current state of the

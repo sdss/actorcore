@@ -6,7 +6,8 @@ instrument.
 """
 
 from opscore.utility.qstr import qstr
-import opscore.utility.sdss3logging as opsLogging
+from opscore.utility.sdss3logging import makeOpsFileLogger
+
 import logging
 
 import imp
@@ -16,7 +17,7 @@ import sys
 import actorcore.Actor
 
 class ICC(actorcore.Actor.Actor):
-    def __init__(self, name, configFile, productName=None, makeCmdrConnection=True):
+    def __init__(self, name, productName=None, configFile=None, makeCmdrConnection=True):
         """
         Create an ICC to communicate with an instrument.
 
@@ -33,7 +34,7 @@ class ICC(actorcore.Actor.Actor):
         actorcore.Actor.Actor.__init__(self, name, configFile=configFile, productName=productName, makeCmdrConnection=makeCmdrConnection)
         
         # Create a separate logger for controller io
-        opsLogging.makeOpsFileLogger(os.path.join(self.logDir, "io"), 'io')
+        makeOpsFileLogger(os.path.join(self.logDir, "io"), 'io')
         self.iolog = logging.getLogger('io')
         self.iolog.setLevel(int(self.config.get('logging','ioLevel')))
         self.iolog.propagate = False
@@ -103,3 +104,14 @@ class ICC(actorcore.Actor.Actor):
         
         self.stopAllControllers()
 
+
+class SDSS_ICC(ICC,actorcore.Actor.SDSSActor):
+    """
+    An ICC that communicates with the hub, handles commands, knows its own location.
+
+    After subclassing it and replacing newActor(), create and start a new actor via:
+        someActor = someActor.newActor()
+        someActor.run(someActor.Msg)
+    """
+
+    pass

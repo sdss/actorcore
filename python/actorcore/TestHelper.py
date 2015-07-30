@@ -708,7 +708,7 @@ class Cmd(object):
 
 
 # Fake logging.
-# logBuffer is where the log will end up.
+# logBuffer and iologbuffer is where the log strings will end up.
 class FakeFileStringIO(StringIO.StringIO):
     """A StringIO that remembers a basedir."""
     def __init__(self,basedir=None):
@@ -718,7 +718,9 @@ class FakeFileStringIO(StringIO.StringIO):
 # NOTE: need this to be global, so I can grab it inside a test and check, e.g.
 # self.assertIn('toy starting up.',TestHelper.logBuffer.getvalue())
 global logBuffer
+global iologBuffer
 logBuffer = None
+iologBuffer = None
 
 def setupRootLogger(basedir, level=logging.INFO, hackRollover=False):
     """
@@ -749,6 +751,30 @@ def setupRootLogger(basedir, level=logging.INFO, hackRollover=False):
             rootLogger.removeHandler(h)
 
     return rootLogger
+
+def fakeOpsFileLogger(dirname, name, level=logging.INFO, **kwargs):
+    """
+    Make a fake ops file logger that logs to a string.
+
+    When testing an ICC subclass, replace ICC.makeOpsFileLogger as part of
+    your Test.setUpClass():
+        from actorcore import ICC
+        ....
+            ICC.makeOpsFileLogger = TestHelper.fakeOpsFileLogger
+    """
+
+    # NOTE: need this to be global, so I can grab it inside a test.
+    global iologBuffer
+    iologBuffer = FakeFileStringIO(basedir=dirname)
+
+    handler = logging.StreamHandler(iologBuffer)
+    handler.setLevel(logging.DEBUG)
+
+    logger = logging.getLogger()
+    logger.setLevel(level)
+    logger.addHandler(handler)
+
+    return logger
 
 
 class ActorTester(object):
