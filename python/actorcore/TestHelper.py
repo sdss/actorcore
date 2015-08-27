@@ -8,6 +8,7 @@ import time
 import logging
 import Queue
 import StringIO
+import ConfigParser
 
 import threading
 call_lock = threading.RLock()
@@ -948,16 +949,30 @@ class Model(object):
 
 class FakeActor(Actor.Actor):
     """An actor that doesn't do anything important during init()."""
-    def __init__(self,name,productName=None):
+    def __init__(self,name, productName=None, cmd=None):
         self.name = name
         self.productName = productName if productName else self.name
         product_dir_name = '$%s_DIR' % (self.productName.upper())
         self.product_dir = os.path.expandvars(product_dir_name)
         self.cmdLog = logging.getLogger('cmds')
         self.logger = logging.getLogger('logger')
+        if cmd is not None:
+            self.bcast = cmd
+            self.cmdr = cmd
+
+        # try to load some logging, don't worry if it fails.
+        try:
+            self.configFile = os.path.expandvars(os.path.join(self.product_dir, 'etc', '%s.cfg' % (self.name)))
+            self.config = ConfigParser.ConfigParser()
+            self.config.read(self.configFile)
+        except:
+            pass
+
         # Disable logging to reduce clutter, since these are just
         # here to keep attachAllCmdSets, etc. happy.
         logging.disable(logging.CRITICAL)
+
+        self.headURL = 'trunk'
 
         self.commandSets = {}
         self.handler = validation.CommandHandler()
@@ -995,9 +1010,7 @@ class ActorState(object):
                 productName = actor+'Actor'
             else:
                 productName = actor
-            self.actor = FakeActor(actor,productName=productName)
-            self.actor.bcast = cmd
-            self.actor.cmdr = cmd
+            self.actor = FakeActor(actor,productName=productName,cmd=cmd)
         for m,p in zip(models,modelParams):
             self.models[m] = Model(m,p)
         global globalModels

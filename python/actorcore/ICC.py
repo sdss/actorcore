@@ -82,7 +82,7 @@ class ICC(actorcore.Actor.Actor):
         return True
 
     def attachAllControllers(self, path=None):
-        """ (Re-)load and (re-)connect to the hardware controllers listed in config:tron.controllers. 
+        """ (Re-)load and (re-)connect to the hardware controllers listed in config:"icc".controllers. 
         """
 
         clist = eval(self.config.get(self.name, 'controllers'))
