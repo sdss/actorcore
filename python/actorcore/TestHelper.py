@@ -819,8 +819,19 @@ class ActorTester(object):
                   'sop':sopState['ok'],
                   'boss':bossState['idle'],
                   'apo':apoState['default']}
-        self.actorState = ActorState(cmd=self.cmd,actor=self.name,models=models.keys(),modelParams=models.values())
-    
+
+        if getattr(self,'actor',None) is None:
+            if self.name in ('boss','gcamera'):
+                productName = self.name+'ICC'
+            elif self.name not in ('mcp','tcc'):
+                productName = self.name+'Actor'
+            else:
+                productName = self.name
+            self.actor = FakeActor(self.name,productName=productName,cmd=self.cmd)
+
+        self.actorState = ActorState(cmd=self.cmd,models=models.keys(),modelParams=models.values())
+        self.actorState.actor = self.actor
+
     def _run_cmd(self, cmdStr, queue, empty=False):
         """
         Run the command in cmdStr on the current actor, and return its msg.
@@ -947,10 +958,16 @@ class Model(object):
         return self.myKeys[name].typedValues.vtypes[0]
 #...
 
-class FakeActor(Actor.Actor):
+class FakeActor(Actor.SDSSActor):
     """An actor that doesn't do anything important during init()."""
-    def __init__(self,name, productName=None, cmd=None):
+
+    def newActor(cls, location='APO', *args, **kwargs):
+        """Default to APO, but allow setting the location. Just init a fakeActor."""
+        return FakeActor(*args, location=location, **kwargs)
+
+    def __init__(self, name, productName=None, cmd=None, location=None):
         self.name = name
+        self.location = location
         self.productName = productName if productName else self.name
         product_dir_name = '$%s_DIR' % (self.productName.upper())
         self.product_dir = os.path.expandvars(product_dir_name)
@@ -1003,14 +1020,6 @@ class ActorState(object):
         if self.dispatcherSet:
             Model.setDispatcher(cmd)
             self.dispatcherSet = True
-        if actor is not None:
-            if actor in ('boss','gcamera'):
-                productName = actor+'ICC'
-            elif actor not in ('mcp','tcc'):
-                productName = actor+'Actor'
-            else:
-                productName = actor
-            self.actor = FakeActor(actor,productName=productName,cmd=cmd)
         for m,p in zip(models,modelParams):
             self.models[m] = Model(m,p)
         global globalModels
