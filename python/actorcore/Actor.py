@@ -323,7 +323,7 @@ class Actor(object):
             path = [os.path.join(self.product_dir, 'python', self.productName, 'Commands')]
 
         self.logger.info("attaching command set %s from path %s", cname, path)
-               
+
         file = None
         try:
             file, filename, description = imp.find_module(cname, path)
@@ -372,7 +372,7 @@ class Actor(object):
             self.handler.removeConsumers(*oldCmdSet.validatedCmds)
         self.handler.addConsumers(*cmdSet.validatedCmds)
 
-        self.logger.warn("handler verbs: %s" % (self.handler.consumers.keys()))
+        self.logger.debug("handler verbs: %s" % (self.handler.consumers.keys()))
         
     def attachAllCmdSets(self, path=None):
         """ (Re-)load all command classes -- files in ./Command which end with Cmd.py.
@@ -385,7 +385,7 @@ class Actor(object):
 
         dirlist = os.listdir(path)
         dirlist.sort()
-        self.logger.warn("loading %s" % (dirlist))
+        self.logger.info("loading %s" % (dirlist))
 
         for f in dirlist:
             if os.path.isdir(f) and not f.startswith('.'):
@@ -555,7 +555,7 @@ class SDSSActor(Actor):
         if path is not None:
             dirlist = os.listdir(path)
             dirlist.sort()
-            self.logger.warn("loading %s" % (dirlist))
+            self.logger.info("loading %s" % (dirlist))
 
             for f in dirlist:
                 if re.match('^[a-zA-Z][a-zA-Z0-9_-]*Cmd_{}\.py$'.format(self.location), f):
