@@ -27,6 +27,7 @@ proc ModulesHelp {{ }} {{
 #
 set product {name}
 set version {version}
+conflict $product
 #
 # The line below is another part of the Modules help system.  You can
 # modify the part in quotes if you really need to, but most products should
@@ -41,7 +42,10 @@ module-whatis "Sets up $product/$version in your environment."
 # A mandatory dependency is a module load command followed by a prereq
 # command.  An optional dependency is not followed by a prereq statement.
 #
-# NO DEPENDENCIES
+module load RO
+
+module load opscore
+prereq opscore
 #
 # ENVIRONMENT SECTION
 #
@@ -61,11 +65,10 @@ setenv [string toupper $product]_DIR $PRODUCT_DIR
 # sdss4install script.
 #
 {needs_bin}prepend-path PATH $PRODUCT_DIR/bin
-{needs_idl}prepend-path IDL_PATH +$PRODUCT_DIR/pro
 {needs_python}prepend-path PYTHONPATH $PRODUCT_DIR/lib/{pyversion}/site-packages
 {needs_trunk_python}prepend-path PYTHONPATH $PRODUCT_DIR/python
 {needs_ld_lib}prepend-path LD_LIBRARY_PATH $PRODUCT_DIR/lib
+{needs_idl}prepend-path IDL_PATH +$PRODUCT_DIR/pro
 #
 # Add any non-standard Module code below this point.
 #
-module load opscore
