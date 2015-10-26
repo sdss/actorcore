@@ -166,14 +166,17 @@ mangaStarePointing = {'pointingInfo':[3001,2,'A',30.,40.,3.,2.,5500,'MaNGA','MaN
 apogeeLeadPointing = {'pointingInfo':[4000,3,'A',40.,50.,4.,3.,10500,'APOGEE2&MANGA','APOGEE lead']}
 apgoeemangaDitherPointing = {'pointingInfo':[5000,4,'A',50.,60.,5.,4.,5500,'APOGEE-2&MaNGA','MaNGA dither']}
 apogeemangaStarePointing = {'pointingInfo':[5001,4,'A',50.,60.,5.,4.,5500,'APOGEE-2&MaNGA','MaNGA Stare']}
+apogeeDesignNone = {'apogeeDesign':[None,None]}
+apogeeDesign1000 = {'apogeeDesign':['longplate',1000]}
 platedbState = {}
-platedbState['boss'] = merge_dicts(bossPointing)
-platedbState['apogee'] = merge_dicts(apogeePointing)
-platedbState['mangaDither'] = merge_dicts(mangaDitherPointing)
-platedbState['mangaStare'] = merge_dicts(mangaStarePointing)
-platedbState['apgoeemangaDither'] = merge_dicts(apgoeemangaDitherPointing)
-platedbState['apgoeemangaStare'] = merge_dicts(apogeemangaStarePointing)
-platedbState['apogeeLead'] = merge_dicts(apogeeLeadPointing)
+platedbState['boss'] = merge_dicts(bossPointing,apogeeDesignNone)
+platedbState['apogee'] = merge_dicts(apogeePointing,apogeeDesignNone)
+platedbState['mangaDither'] = merge_dicts(mangaDitherPointing,apogeeDesignNone)
+platedbState['mangaStare'] = merge_dicts(mangaStarePointing,apogeeDesignNone)
+platedbState['apgoeemangaDither'] = merge_dicts(apgoeemangaDitherPointing,apogeeDesignNone)
+platedbState['apgoeemangaStare'] = merge_dicts(apogeemangaStarePointing,apogeeDesignNone)
+platedbState['apogeeLead'] = merge_dicts(apogeeLeadPointing,apogeeDesignNone)
+platedbState['apogeeLead1000s'] = merge_dicts(apogeeLeadPointing,apogeeDesign1000)
 
 # gcamera state setup
 gcameraTempOk = {'cooler':[-40,-40,-40,80,1,'Correcting']}
