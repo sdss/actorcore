@@ -122,6 +122,7 @@ tccState['badAz'] = merge_dicts(tccBase, axisStatBadAz, atStow, axisCmdState_azh
 
 
 # guider state setup
+noneLoaded = {'cartridgeLoaded':[-1,-1,'?',-1,-1]}
 bossLoaded = {'cartridgeLoaded':[11,1000,'A',54321,1], 'survey':['BOSS','None'], 'loadedNewCartridge':[]}
 apogeeLoaded = {'cartridgeLoaded':[1,2000,'A',54321,2], 'survey':['APOGEE','None'], 'loadedNewCartridge':[]}
 mangaDitherLoaded = {'cartridgeLoaded':[2,3000,'A',54321,3], 'survey':['MaNGA','MaNGA Dither'], 'loadedNewCartridge':[]}
@@ -146,6 +147,7 @@ mangaE = {'mangaDither':['E'],'decenter':[0,'enabled',+0.833,0,0,0,0]}
 mangaC = {'mangaDither':['C'],'decenter':[0,'disabled',0,0,0,0,0]}
 mangaCenabled = {'mangaDither':['C'],'decenter':[0,'enabled',0,0,0,0,0]}
 guiderState = {}
+guiderState['noneLoaded'] = merge_dicts(guiderOff,noneLoaded,mangaC)
 guiderState['cartLoaded'] = merge_dicts(guiderOff,bossLoaded,mangaC)
 guiderState['bossLoaded'] = merge_dicts(guiderOff,bossLoaded,mangaC)
 guiderState['apogeeLoaded'] = merge_dicts(guiderOff,apogeeLoaded,mangaC)
@@ -166,14 +168,17 @@ mangaStarePointing = {'pointingInfo':[3001,2,'A',30.,40.,3.,2.,5500,'MaNGA','MaN
 apogeeLeadPointing = {'pointingInfo':[4000,3,'A',40.,50.,4.,3.,10500,'APOGEE2&MANGA','APOGEE lead']}
 apgoeemangaDitherPointing = {'pointingInfo':[5000,4,'A',50.,60.,5.,4.,5500,'APOGEE-2&MaNGA','MaNGA dither']}
 apogeemangaStarePointing = {'pointingInfo':[5001,4,'A',50.,60.,5.,4.,5500,'APOGEE-2&MaNGA','MaNGA Stare']}
+apogeeDesignNone = {'apogeeDesign':['?',-1]}
+apogeeDesign1000 = {'apogeeDesign':['longplate',1000]}
 platedbState = {}
-platedbState['boss'] = merge_dicts(bossPointing)
-platedbState['apogee'] = merge_dicts(apogeePointing)
-platedbState['mangaDither'] = merge_dicts(mangaDitherPointing)
-platedbState['mangaStare'] = merge_dicts(mangaStarePointing)
-platedbState['apgoeemangaDither'] = merge_dicts(apgoeemangaDitherPointing)
-platedbState['apgoeemangaStare'] = merge_dicts(apogeemangaStarePointing)
-platedbState['apogeeLead'] = merge_dicts(apogeeLeadPointing)
+platedbState['boss'] = merge_dicts(bossPointing,apogeeDesignNone)
+platedbState['apogee'] = merge_dicts(apogeePointing,apogeeDesignNone)
+platedbState['mangaDither'] = merge_dicts(mangaDitherPointing,apogeeDesignNone)
+platedbState['mangaStare'] = merge_dicts(mangaStarePointing,apogeeDesignNone)
+platedbState['apgoeemangaDither'] = merge_dicts(apgoeemangaDitherPointing,apogeeDesignNone)
+platedbState['apgoeemangaStare'] = merge_dicts(apogeemangaStarePointing,apogeeDesignNone)
+platedbState['apogeeLead'] = merge_dicts(apogeeLeadPointing,apogeeDesignNone)
+platedbState['apogeeLead1000s'] = merge_dicts(apogeeLeadPointing,apogeeDesign1000)
 
 # gcamera state setup
 gcameraTempOk = {'cooler':[-40,-40,-40,80,1,'Correcting']}
@@ -193,24 +198,26 @@ bypasses = ["ffs", "lamp_ff", "lamp_hgcd", "lamp_ne", "axes",
             "isApogeeLead", "isApogeeMangaDither", "isApogeeMangaStare",
             "gangToCart", "gangToPodium", "slewToField", "guiderDark"]
 sopNoBypass = {'bypassNames':bypasses,'bypassed':[0,]*len(bypasses), 'bypassedNames':[]}
-sopEmptyCommands = {"surveyCommands":('gotoStow', 'gotoInstrumentChange'),
+sopEmptyCommands = {"surveyCommands":('gotoField', 'gotoStow', 'gotoInstrumentChange', 'gotoAll60', 'gotoStow60'),
                     'survey':['UNKNOWN','None']}
-sopBossCommands = {"surveyCommands":('gotoField', 'doBossCalibs',
-                                      'doBossScience','gotoInstrumentChange'),
+sopBossCommands = {"surveyCommands":('gotoField',
+                                     'gotoStow', 'gotoInstrumentChange', 'gotoAll60', 'gotoStow60',
+                                     'doBossCalibs', 'doBossScience'),
                    'survey':['BOSS','None']}
-sopMangaCommands = {"surveyCommands":('gotoField', 'doBossCalibs',
-                                      'doMangaDither', 'doMangaSequence',
-                                      'gotoInstrumentChange'),
+sopMangaCommands = {"surveyCommands":('gotoField',
+                                      'gotoStow', 'gotoInstrumentChange', 'gotoAll60', 'gotoStow60',
+                                      'doBossCalibs', 'doMangaDither', 'doMangaSequence'),
                     'survey':['MaNGA','MaNGA dither']}
-sopApogeeCommands = {"surveyCommands":('gotoField', 'doApogeeScience',
-                                       'doApogeeSkyFlats', 'gotoGangChange',
-                                       'gotoInstrumentChange', 'doApogeeDomeFlat'),
+sopApogeeCommands = {"surveyCommands":('gotoField',
+                                       'gotoStow', 'gotoInstrumentChange', 'gotoAll60', 'gotoStow60',
+                                       'doApogeeScience', 'doApogeeSkyFlats',
+                                       'gotoGangChange','doApogeeDomeFlat'),
                    'survey':['APOGEE','None']}
 sopApogeeMangaCommands = {"surveyCommands":('gotoField',
+                                            'gotoStow', 'gotoInstrumentChange', 'gotoAll60', 'gotoStow60',
                                             'doBossCalibs',
                                             'doApogeeMangaDither', 'doApogeeMangaSequence',
-                                            'doApogeeSkyFlats', 'gotoGangChange',
-                                            'gotoInstrumentChange', 'doApogeeDomeFlat'),
+                                            'doApogeeSkyFlats', 'gotoGangChange', 'doApogeeDomeFlat'),
                           'survey':['APOGEE-2&MaNGA','APOGEE lead']}
 sopState = {}
 sopState['ok'] = merge_dicts(sopNoBypass,sopEmptyCommands)
