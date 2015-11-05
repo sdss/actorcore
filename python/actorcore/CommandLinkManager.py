@@ -4,14 +4,8 @@ __all__ = ['CommandLinkManager', 'listen']
 
 import logging
 
-import os
-import sys
-import threading
-
-from opscore.utility.qstr import qstr
 from twisted.internet.protocol import Factory
 from CommandLink import CommandLink
-from Command import Command
 
 class CommandLinkManager(Factory):
     """ Launch an instance of the given Protocol when a new connection comes in. """
@@ -19,7 +13,7 @@ class CommandLinkManager(Factory):
     protocol = CommandLink
     
     def __init__(self, brains, protocolName='CommandLink'):
-        """ Manage a dynamic set of CommandLinks. 
+        """ Manage a dynamic set of CommandLinks.
 
         Args:
            brains  - the object which operates on new Commands. Simply passed in to the
@@ -65,8 +59,8 @@ class CommandLinkManager(Factory):
 
         try:
             self.activeConnections.remove(c)
-        except ValueError, e:
-            raise                       # CPL
+        except ValueError as e:
+            raise e
         
     def sendResponse(self, cmd, flag, response):
         """ Ship a response off to all connections. """
@@ -74,15 +68,16 @@ class CommandLinkManager(Factory):
         for c in self.activeConnections:
             try:
                 c.sendResponse(cmd, flag, response)
-            except Exception, e:
-                raise                   # CPL
+            except Exception as e:
+                raise e
         
 def listen(actor, port, interface=''):
-    """ Launch a manager listening on a given interface+port""" 
+    """ Launch a manager listening on a given interface+port"""
     from twisted.internet import reactor
 
     mgr = CommandLinkManager(actor)
-    p = reactor.listenTCP(port, mgr, interface=interface)
+    port = reactor.listenTCP(port, mgr, interface=interface)
+    mgr.port = port
     return mgr
 
 def main():
@@ -94,7 +89,7 @@ def main():
             cmd.respond('text="new Command: %s"' % (cmd))
 
     actor = DummyActor()
-    listen(actor, port=9999, interface='localhost') 
+    listen(actor, port=9999, interface='localhost')
 
     logging.info("starting reactor....")
     reactor.run()

@@ -6,7 +6,6 @@ import logging
 actorLogger = logging.getLogger('actor')
 cmdLogger = logging.getLogger('cmds')
 
-import os
 import re
 import sys
 import threading

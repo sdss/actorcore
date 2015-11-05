@@ -1,20 +1,40 @@
+"""
+Instrument Control Computer
+
+An ICC is a specialized actor with a controller that interfaces with a given
+instrument.
+"""
+
 from opscore.utility.qstr import qstr
-import opscore.utility.sdss3logging as opsLogging
+from opscore.utility.sdss3logging import makeOpsFileLogger
+
 import logging
 
 import imp
 import os
 import sys
-import threading
 
-import actorcore.Actor as coreActor
+import actorcore.Actor
 
-class ICC(coreActor.Actor):
-    def __init__(self, name, configFile, productName=None):
-        coreActor.Actor.__init__(self, name, configFile=configFile, productName=productName)
+class ICC(actorcore.Actor.Actor):
+    def __init__(self, name, productName=None, configFile=None, makeCmdrConnection=True):
+        """
+        Create an ICC to communicate with an instrument.
+
+        Args:
+            name (str): the name we are advertised as to the hub.
+
+        Kwargs:
+            productName (str): the name of the product; defaults to name
+            configFile (str): the full path of the configuration file; defaults
+                to $PRODUCTNAME_DIR/etc/$name.cfg
+            makeCmdrConnection (bool): establish self.cmdr as a command connection to the hub.
+        """
+
+        actorcore.Actor.Actor.__init__(self, name, configFile=configFile, productName=productName, makeCmdrConnection=makeCmdrConnection)
         
         # Create a separate logger for controller io
-        opsLogging.makeOpsFileLogger(os.path.join(self.logDir, "io"), 'io')
+        makeOpsFileLogger(os.path.join(self.logDir, "io"), 'io')
         self.iolog = logging.getLogger('io')
         self.iolog.setLevel(int(self.config.get('logging','ioLevel')))
         self.iolog.propagate = False
@@ -43,7 +63,7 @@ class ICC(coreActor.Actor):
 
         # Instantiate and save a new controller. 
         self.logger.info('creating new %s (%08x)', name, id(mod))
-        exec('conn = mod.%s(self, "%s")' % (name, name))
+        conn = getattr(mod,name)(self, name)
 
         # If we loaded the module and the controller is already running, cleanly stop the old one. 
         if name in self.controllers:
@@ -62,7 +82,7 @@ class ICC(coreActor.Actor):
         return True
 
     def attachAllControllers(self, path=None):
-        """ (Re-)load and (re-)connect to the hardware controllers listed in config:tron.controllers. 
+        """ (Re-)load and (re-)connect to the hardware controllers listed in config:"icc".controllers. 
         """
 
         clist = eval(self.config.get(self.name, 'controllers'))
@@ -80,7 +100,18 @@ class ICC(coreActor.Actor):
             controller.stop()
 
     def shutdown(self):
-        actorCore.Actor.shutdown(self)
+        actorcore.Actor.shutdown(self)
         
         self.stopAllControllers()
 
+
+class SDSS_ICC(ICC,actorcore.Actor.SDSSActor):
+    """
+    An ICC that communicates with the hub, handles commands, knows its own location.
+
+    After subclassing it and replacing newActor(), create and start a new actor via:
+        someActor = someActor.newActor()
+        someActor.run(someActor.Msg)
+    """
+
+    pass

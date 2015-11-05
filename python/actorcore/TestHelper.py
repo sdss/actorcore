@@ -5,19 +5,19 @@ import sys
 import os
 import re
 import time
-import imp
-import inspect
 import logging
 import Queue
+import StringIO
+import ConfigParser
 
 import threading
 call_lock = threading.RLock()
 
+from . import Actor
+
 import opscore.protocols.validation as validation
-from opscore.utility.qstr import qstr
 from opscore.actor import keyvar
 from opscore.protocols import keys,parser,messages
-from opscore.utility.tback import tback
 
 # To allow fake-setting/handling of the various actor models.
 global globalModels
@@ -598,6 +598,7 @@ class Cmd(object):
         Return the new key/value pair, or None if nothing is to be changed.
         """
         key = lamp+'Lamp'
+        global globalModels
         val = globalModels['mcp'].keyVarDict[key].getValue()
 
         if (state == 'on' and sum(val) == 4) or (state == 'off' and val == 0):
@@ -714,6 +715,76 @@ class Cmd(object):
             globalModels['guider'].keyVarDict[key].set(newVal[key])
 
 
+# Fake logging.
+# logBuffer and iologbuffer is where the log strings will end up.
+class FakeFileStringIO(StringIO.StringIO):
+    """A StringIO that remembers a basedir."""
+    def __init__(self,basedir=None):
+        self.basedir = basedir
+        StringIO.StringIO.__init__(self)
+
+# NOTE: need this to be global, so I can grab it inside a test and check, e.g.
+# self.assertIn('toy starting up.',TestHelper.logBuffer.getvalue())
+global logBuffer
+global iologBuffer
+logBuffer = None
+iologBuffer = None
+
+def setupRootLogger(basedir, level=logging.INFO, hackRollover=False):
+    """
+    Save all log output into a string for later searching.
+
+    When testing an Actor subclass, replace Actor.setupRootLogger as part of
+    your Test.setUpClass():
+        from actorcore import Actor
+        ....
+            Actor.setupRootLogger = TestHelper.setupRootLogger
+    """
+
+    # NOTE: need this to be global, so I can grab it inside a test.
+    global logBuffer
+    logBuffer = FakeFileStringIO(basedir=basedir)
+
+    rootHandler = logging.StreamHandler(logBuffer)
+    rootHandler.setLevel(logging.DEBUG)
+
+    rootLogger = logging.getLogger()
+    rootLogger.setLevel(level)
+    rootLogger.addHandler(rootHandler)
+
+    # disable stderr output
+    for h in rootLogger.handlers:
+        if isinstance(h, logging.StreamHandler) and h.stream == sys.stderr:
+            h.setLevel(logging.CRITICAL + 1)
+            rootLogger.removeHandler(h)
+
+    return rootLogger
+
+def fakeOpsFileLogger(dirname, name, level=logging.INFO, **kwargs):
+    """
+    Make a fake ops file logger that logs to a string.
+
+    When testing an ICC subclass, replace ICC.makeOpsFileLogger as part of
+    your Test.setUpClass():
+        from actorcore import ICC
+        ....
+            ICC.makeOpsFileLogger = TestHelper.fakeOpsFileLogger
+    """
+
+    # NOTE: need this to be global, so I can grab it inside a test.
+    global iologBuffer
+    iologBuffer = FakeFileStringIO(basedir=dirname)
+
+    handler = logging.StreamHandler(iologBuffer)
+    handler.setLevel(logging.DEBUG)
+
+    logger = logging.getLogger()
+    logger.setLevel(level)
+    logger.addHandler(handler)
+
+    return logger
+
+
 class ActorTester(object):
     """
     Helper class for actor-related tests. Sets up a reasonable initial model state.
@@ -755,8 +826,19 @@ class ActorTester(object):
                   'sop':sopState['ok'],
                   'boss':bossState['idle'],
                   'apo':apoState['default']}
-        self.actorState = ActorState(cmd=self.cmd,actor=self.name,models=models.keys(),modelParams=models.values())
-    
+
+        if getattr(self,'actor',None) is None:
+            if self.name in ('boss','gcamera'):
+                productName = self.name+'ICC'
+            elif self.name not in ('mcp','tcc'):
+                productName = self.name+'Actor'
+            else:
+                productName = self.name
+            self.actor = FakeActor(self.name,productName=productName,cmd=self.cmd)
+
+        self.actorState = ActorState(cmd=self.cmd,models=models.keys(),modelParams=models.values())
+        self.actorState.actor = self.actor
+
     def _run_cmd(self, cmdStr, queue, empty=False):
         """
         Run the command in cmdStr on the current actor, and return its msg.
@@ -883,17 +965,42 @@ class Model(object):
         return self.myKeys[name].typedValues.vtypes[0]
 #...
 
-class FakeActor(object):
-    """A massively stripped-down version of actorcore.Actor."""
-    def __init__(self,name,productName=None):
+class FakeActor(Actor.SDSSActor):
+    """An actor that doesn't do anything important during init()."""
+
+    def newActor(cls, location='APO', *args, **kwargs):
+        """Default to APO, but allow setting the location. Just init a fakeActor."""
+        return FakeActor(*args, location=location, **kwargs)
+
+    def __init__(self, name, productName=None, cmd=None, location=None):
         self.name = name
-        self.commandSets = {}
+        self.location = location
         self.productName = productName if productName else self.name
         product_dir_name = '$%s_DIR' % (self.productName.upper())
         self.product_dir = os.path.expandvars(product_dir_name)
+        self.cmdLog = logging.getLogger('cmds')
+        self.logger = logging.getLogger('logger')
+        if cmd is not None:
+            self.bcast = cmd
+            self.cmdr = cmd
+
+        # try to load some logging, don't worry if it fails.
+        try:
+            self.configFile = os.path.expandvars(os.path.join(self.product_dir, 'etc', '%s.cfg' % (self.name)))
+            self.config = ConfigParser.ConfigParser()
+            self.config.read(self.configFile)
+        except:
+            pass
+
+        # Disable logging to reduce clutter, since these are just
+        # here to keep attachAllCmdSets, etc. happy.
+        logging.disable(logging.CRITICAL)
+
+        self.headURL = 'trunk'
+
+        self.commandSets = {}
         self.handler = validation.CommandHandler()
         self.attachAllCmdSets()
-        self.cmdLog = logging.getLogger('cmds')
     
     def sendVersionKey(self,cmd):
         cmd.inform("version=FAKE!")
@@ -903,116 +1010,6 @@ class FakeActor(object):
         self.newCmd = Cmd()
         self.newCmd.call(actor=self.name, cmdStr=cmdStr)
 
-    #
-    # this stuff was lifted from actorcore/Actor.py
-    #
-    def runActorCmd(self, cmd):
-        try:
-            cmdStr = cmd.rawCmd
-            self.cmdLog.debug('raw cmd: %s' % (cmdStr))
-            
-            try:
-                validatedCmd, cmdFuncs = self.handler.match(cmdStr)
-            except Exception, e:
-                cmd.fail('text=%s' % (qstr("Unmatched command: %s (exception: %s)" %
-                                           (cmdStr, e))))
-                    #tback('actor_loop', e)
-                return
-            
-            if not validatedCmd:
-                cmd.fail('text=%s' % (qstr("Unrecognized command: %s" % (cmdStr))))
-                return
-            
-            self.cmdLog.info('< %s:%d %s' % (cmd.cmdr, cmd.mid, validatedCmd))
-            if len(cmdFuncs) > 1:
-                cmd.warn('text=%s' % (qstr("command has more than one callback (%s): %s" %
-                                           (cmdFuncs, validatedCmd))))
-            try:
-                cmd.cmd = validatedCmd
-                for func in cmdFuncs:
-                    func(cmd)
-            except Exception, e:
-                cmd.fail('text=%s' % (qstr("command failed: %s" % (e))))
-                #tback('newCmd', e)
-                return
-                
-        except Exception, e:
-            cmd.fail('text=%s' % (qstr("completely unexpected exception when processing a new command: %s" %
-                                       (e))))
-            try:
-                tback('newCmdFail', e)
-            except:
-                pass
-
-    def attachCmdSet(self, cname, path=None):
-        """ (Re-)load and attach a named set of commands. """
-
-        if path == None:
-            path = [os.path.join(self.product_dir, 'python', self.productName, 'Commands')]
-               
-        file = None
-        try:
-            file, filename, description = imp.find_module(cname, path)
-            mod = imp.load_module(cname, file, filename, description)
-        except ImportError, e:
-            raise RuntimeError('Import of %s failed: %s' % (cname, e))
-        finally:
-            if file:
-                file.close()
-
-        # Instantiate and save a new command handler. 
-        exec('cmdSet = mod.%s(self)' % (cname))
-
-        # Check any new commands before finishing with the load. This
-        # is a bit messy, as the commands might depend on a valid
-        # keyword dictionary, which also comes from the module
-        # file.
-        #
-        # BAD problem here: the Keys define a single namespace. We need
-        # to check for conflicts and allow unloading. Right now we unilaterally 
-        # load the Keys and do not unload them if the validation fails.
-        if hasattr(cmdSet, 'keys') and cmdSet.keys:
-            keys.CmdKey.addKeys(cmdSet.keys)
-        valCmds = []
-        for v in cmdSet.vocab:
-            try:
-                verb, args, func = v
-            except ValueError, e:
-                raise RuntimeError("vocabulary word needs three parts: %s" % (v))
-
-            # Check that the function exists and get its help.
-            #
-            funcDoc = inspect.getdoc(func)
-            valCmd = validation.Cmd(verb, args, help=funcDoc) >> func
-            valCmds.append(valCmd)
-
-        # Got this far? Commit. Save the Cmds so that we can delete them later.
-        oldCmdSet = self.commandSets.get(cname, None)
-        cmdSet.validatedCmds = valCmds
-        self.commandSets[cname] = cmdSet
-
-        # Delete previous set of consumers for this named CmdSet, add new ones.
-        if oldCmdSet:
-            self.handler.removeConsumers(*oldCmdSet.validatedCmds)
-        self.handler.addConsumers(*cmdSet.validatedCmds)
-        
-    def attachAllCmdSets(self, path=None):
-        """ (Re-)load all command classes -- files in ./Command which end with Cmd.py."""
-
-        if path == None:
-            self.attachAllCmdSets(path=os.path.join(os.path.expandvars('$ACTORCORE_DIR'), 'python','actorcore','Commands'))
-            self.attachAllCmdSets(path=os.path.join(self.product_dir, 'python', self.productName, 'Commands'))
-            return
-
-        dirlist = os.listdir(path)
-        dirlist.sort()
-
-        for f in dirlist:
-            if os.path.isdir(f) and not f.startswith('.'):
-                self.attachAllCmdSets(path=f)
-            if re.match('^[a-zA-Z][a-zA-Z0-9_-]*Cmd\.py$', f):
-                self.attachCmdSet(f[:-3], [path])
-                
 
 class ActorState(object):
     """
@@ -1030,13 +1027,6 @@ class ActorState(object):
         if self.dispatcherSet:
             Model.setDispatcher(cmd)
             self.dispatcherSet = True
-        if actor is not None:
-            productName = ''
-            if actor not in ('mcp','tcc','boss'):
-                productName = actor+'Actor'
-            self.actor = FakeActor(actor,productName=productName)
-            self.actor.bcast = cmd
-            self.actor.cmdr = cmd
         for m,p in zip(models,modelParams):
             self.models[m] = Model(m,p)
         global globalModels
