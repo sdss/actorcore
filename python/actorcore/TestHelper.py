@@ -197,7 +197,7 @@ bypasses = ["ffs", "lamp_ff", "lamp_hgcd", "lamp_ne", "axes",
             "isMangaDither", "isMangaStare",
             "isApogeeLead", "isApogeeMangaDither", "isApogeeMangaStare",
             "gangToCart", "gangToPodium", "slewToField", "guiderDark"]
-sopNoBypass = {'bypassNames':bypasses,'bypassed':[0,]*len(bypasses), 'bypassedNames':[]}
+sopNoBypass = {'bypassNames':bypasses, 'bypassedNames':[]}
 sopEmptyCommands = {"surveyCommands":('gotoField', 'gotoStow', 'gotoInstrumentChange', 'gotoAll60', 'gotoStow60'),
                     'survey':['UNKNOWN','None']}
 sopBossCommands = {"surveyCommands":('gotoField',
