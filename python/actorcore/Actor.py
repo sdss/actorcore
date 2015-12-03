@@ -517,7 +517,7 @@ class SDSSActor(Actor):
     __metaclass__ = abc.ABCMeta
 
     @abc.abstractmethod
-    def newActor(cls):
+    def newActor():
         """Subclasses must implement this as a @staticmethod.
 
         Return the version of the actor based on our location.
