@@ -8,7 +8,6 @@ import time
 import logging
 import Queue
 import StringIO
-import ConfigParser
 
 import threading
 call_lock = threading.RLock()
@@ -842,7 +841,7 @@ class ActorTester(object):
                 productName = self.name+'Actor'
             else:
                 productName = self.name
-            self.actor = FakeActor(self.name,productName=productName,cmd=self.cmd)
+            self.actor = FakeActor.newActor(self.name,productName=productName,cmd=self.cmd)
 
         self.actorState = ActorState(cmd=self.cmd,models=models.keys(),modelParams=models.values())
         self.actorState.actor = self.actor
@@ -976,28 +975,31 @@ class Model(object):
 class FakeActor(Actor.SDSSActor):
     """An actor that doesn't do anything important during init()."""
 
-    def newActor(cls, location='APO', *args, **kwargs):
+    @staticmethod
+    def newActor(name, location='APO', *args, **kwargs):
         """Default to APO, but allow setting the location. Just init a fakeActor."""
-        return FakeActor(*args, location=location, **kwargs)
+        return FakeActor(name, location=location, **kwargs)
 
-    def __init__(self, name, productName=None, cmd=None, location=None):
+    def __init__(self, name, productName=None, cmd=None, configFile=None, location=None):
         self.name = name
         self.location = location
         self.productName = productName if productName else self.name
         product_dir_name = '$%s_DIR' % (self.productName.upper())
         self.product_dir = os.path.expandvars(product_dir_name)
+        self.configFile = configFile if configFile else \
+            os.path.expandvars(os.path.join(self.product_dir, 'etc', '%s.cfg' % (self.name)))
+
         self.cmdLog = logging.getLogger('cmds')
         self.logger = logging.getLogger('logger')
         if cmd is not None:
             self.bcast = cmd
             self.cmdr = cmd
 
-        # try to load some logging, don't worry if it fails.
+        # try to load the config file(s), don't worry if it fails.
         try:
-            self.configFile = os.path.expandvars(os.path.join(self.product_dir, 'etc', '%s.cfg' % (self.name)))
-            self.config = ConfigParser.ConfigParser()
-            self.config.read(self.configFile)
+            self.read_config_files()
         except:
+            print "Warning: failed to parse config file(s)."
             pass
 
         # Disable logging to reduce clutter, since these are just
