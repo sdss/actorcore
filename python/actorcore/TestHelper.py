@@ -271,7 +271,7 @@ class Cmd(object):
 
         # to keep track of whether BOSS hasn't been readout.
         self.bossNeedsReadout = False
-        
+
     def __repr__(self):
         return 'TestHelperCmdr-%s'%('finished' if self.finished else 'alive')
 
@@ -287,7 +287,7 @@ class Cmd(object):
             badTxt="!!!!!This cmd already finished %d times!"%self.nFinished
             self._msg(badTxt,'w')
         self.nFinished += 1
-    
+
     def clear_msgs(self):
         """Clear all message text, levels, and calls."""
         self.levels = ''
@@ -320,14 +320,14 @@ class Cmd(object):
         self._msg(txt,'f')
         self.finished = True
         self.didFail = True
-    
+
     def finish(self,txt=''):
         self._checkFinished()
         self._msg(txt,'F')
         self.finished = True
     def isAlive(self):
         return not self.finished
-    
+
     def use_keywords(self,txt):
         """
         Update a model keyword, given an inform-level output.
@@ -422,7 +422,7 @@ class Cmd(object):
                 didFail = succeed_func(**kwargs)
 
         return _finish(didFail,kwargs)
-    
+
     def apogee_succeed(self,**kwargs):
         """Handle apogee commands as successes, and update appropriate keywords."""
 
@@ -462,7 +462,7 @@ class Cmd(object):
         else:
             raise ValueError('Unknown dither position: %s'%cmdVal)
         return key,newVal
-    
+
     def _get_shutter(self,keywords):
         """Return the key/value pair for a requested new shutter position."""
         key = 'shutterLimitSwitch'
@@ -473,7 +473,7 @@ class Cmd(object):
         else:
             raise ValueError('Unknown shutter position: %s'%keywords)
         return key,newVal
-    
+
     def _get_expose(self,keywords):
         """Return the key/value pair for a requested exposure."""
         key = 'utrReadState'
@@ -482,7 +482,7 @@ class Cmd(object):
         name = keywords['object'].values[0]
         newVal = {key:(name,'Reading',1,nReads)}
         return key,newVal
-    
+
     def _fake_boss_readout(self, cmd):
         """Behave like the real camera regarding when readouts are allowed or not."""
 
@@ -527,7 +527,7 @@ class Cmd(object):
             didFail = False
 
         return didFail
-    
+
     def boss_fail(self,**kwargs):
         """Handle boss commands as failures, deal with readouts, and update appropriate keywords."""
         cmdStr = kwargs.get('cmdStr')
@@ -617,7 +617,7 @@ class Cmd(object):
         else:
             raise ValueError('Unknown %sLamp state: %s'%(lamp,state))
         return key,newVal
-    
+
     def _do_ffs(self,state):
         """Change ffs screens to new state"""
         key = 'ffsStatus'
@@ -628,7 +628,7 @@ class Cmd(object):
         else:
             raise ValueError('Unknown ffs state: %s'%state)
         return key,newVal
-    
+
     def guider_succeed(self,**kwargs):
         """Handle guider commands as successes, and update appropriate keywords."""
 
@@ -676,7 +676,7 @@ class Cmd(object):
             globalModels['guider'].keyVarDict[key].set(newVal[key])
 
         return didFail
-    
+
     def _get_mangaDither(self,keywords):
         """Set a new mangaDither position."""
         key = 'decenter'
@@ -694,7 +694,7 @@ class Cmd(object):
         global globalModels
         globalModels['guider'].keyVarDict['mangaDither'].set(newVal['mangaDither'])
         return key,newVal
-        
+
     def _get_decenter(self,keywords):
         """Change decenter to new state"""
         key = 'decenter'
@@ -799,7 +799,7 @@ class ActorTester(object):
     Expects that self.name be set to the name of this actor before setUp().
     test suites should subclass this and unittest, in that order.
     """
-    
+
     def setUp(self):
         """Set some defaults and initialize self.actorState."""
         self.timeout = 5
@@ -817,11 +817,11 @@ class ActorTester(object):
                 print "\n" # newline after unittest's docstring printing.
         except NameError:
             self.verbose = False
-        
+
         self.longMessage=True # appends custom assert messages to the default text (very useful!)
 
         self.cmd = Cmd(verbose=self.verbose)
-        
+
         # default status for some actors
         models = {'mcp':mcpState['all_off'],
                   'apogee':apogeeState['A_closed'],
@@ -857,7 +857,7 @@ class ActorTester(object):
             return self._queue_get(queue, empty)
         else:
             return None
-    
+
     def _queue_get(self, queue, empty=False):
         """
         Get a message off the queue, and fail with a message if there isn't one.
@@ -881,7 +881,7 @@ class ActorTester(object):
 
         self._check_levels(nCall, nInfo, nWarn, nErr)
         self.assertEqual(self.cmd.finished, finish)
-        
+
         if didFail and finish:
             self.assertEqual(self.cmd.didFail, didFail)
             # if we really "fail"ed, there should be exactly one fail message.
@@ -893,13 +893,13 @@ class ActorTester(object):
         else:
             # if we didn't "fail", there should be exactly 0 fail messages.
             self.assertEqual(self.cmd.levels.count('f'),0)
-    
+
     def _check_levels(self, nCall, nInfo, nWarn, nErr):
         """Check that the cmd levels match the expected result."""
         l = self.cmd.levels
         counts = (l.count('c'),l.count('i'),l.count('w'),l.count('e'))
         self.assertEqual(counts,(nCall,nInfo,nWarn,nErr))
-    
+
     def _check_calls(self,test_calls,calls):
         """
         Check that the actual cmd calls match the expected result.
@@ -962,11 +962,11 @@ class Model(object):
         for k,v in keyDict.items():
             self.keyVarDict[k] = keyvar.KeyVar(actor,self.myKeys[k])#,doPrint=True)
             self.keyVarDict[k].set(v)
-    
+
     def setKey(self,key,value):
         """Set keyVarDict[key] = value, with appropriate type conversion."""
         self.keyVarDict[key].set(value)
-    
+
     def get_TypedValue(self,name):
         """Returns the TypedValue of the actorkey actor[name]."""
         return self.myKeys[name].typedValues.vtypes[0]
@@ -1011,10 +1011,10 @@ class FakeActor(Actor.SDSSActor):
         self.commandSets = {}
         self.handler = validation.CommandHandler()
         self.attachAllCmdSets()
-    
+
     def sendVersionKey(self,cmd):
         cmd.inform("version=FAKE!")
-    
+
     def callCommand(self, cmdStr):
         """Send ourselves a command, via a new cmd."""
         self.newCmd = Cmd()
@@ -1041,4 +1041,3 @@ class ActorState(object):
             self.models[m] = Model(m,p)
         global globalModels
         globalModels = self.models
-    
