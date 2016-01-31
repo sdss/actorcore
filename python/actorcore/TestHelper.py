@@ -66,10 +66,18 @@ shutterOpen = {'shutterLimitSwitch':['true','false']}
 shutterUnknown = {'shutterLimitSwitch':['false','false']}
 notReading = {'utrReadState':['','Done',0,0]}
 reading = {'utrReadState':['object','Reading',1,2]}
+done = {'exposureState': ['Done', 'science', 100, 'APOGEE_expName']}
+exposing = {'exposureState': ['Exposing', 'science', 100, 'APOGEE_expName']}
+stopped = {'exposureState': ['Stopped', 'science', 100, 'APOGEE_expName']}
+failed = {'exposureState': ['Failed', 'science', 100, 'APOGEE_expName']}
 apogeeState = {}
-apogeeState['A_closed'] = merge_dicts(ditherA, shutterClosed, notReading)
-apogeeState['B_open'] = merge_dicts(ditherB, shutterOpen, notReading)
-apogeeState['unknown'] = merge_dicts(ditherUnknown, shutterUnknown, notReading)
+apogeeState['A_closed'] = merge_dicts(ditherA, shutterClosed, notReading, done)
+apogeeState['B_open'] = merge_dicts(ditherB, shutterOpen, notReading, done)
+apogeeState['unknown'] = merge_dicts(ditherUnknown, shutterUnknown,
+                                     notReading, done)
+apogeeState['done'] = merge_dicts(ditherA, shutterClosed, notReading, done)
+apogeeState['exposing'] = merge_dicts(ditherA, shutterOpen,
+                                      notReading, exposing)
 
 
 #BOSS state setup
