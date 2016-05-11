@@ -43,9 +43,12 @@ module-whatis "Sets up $product/$version in your environment."
 # command.  An optional dependency is not followed by a prereq statement.
 #
 module load RO
-
+#
 module load opscore
 prereq opscore
+#
+module load pyfits
+#
 #
 # ENVIRONMENT SECTION
 #
