@@ -385,10 +385,8 @@ def writeFits(cmd, hdu, directory, filename, doCompress=False, chmod=0444,
             outName = os.path.join(directory, filename)
             if filename[-3:] != '.gz':
                 outName += '.gz'
-            # LCOHACK: removing compresslevel as it does not work with the
-            #          servers at LCO.
             tempFile = gzip.GzipFile(fileobj=tempFile, filename=filename,
-                                     mode='wb')
+                                     mode='wb', compresslevel=4)
         else:
             outName = os.path.join(directory, filename)
 
