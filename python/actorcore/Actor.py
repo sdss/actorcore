@@ -530,7 +530,7 @@ class SDSSActor(Actor):
         if location is None:
             fqdn = socket.getfqdn()
         else:
-            return location
+            return location.upper()
 
         if 'apo' in fqdn:
             return 'APO'
