@@ -632,9 +632,16 @@ class SDSSActor(Actor):
 
         newQueues = {}
         threadsToStart = []
-        for tname, tid, threadModule in self.threadList:
+        for tname, tid, thread in self.threadList:
 
             newQueues[tid] = Queue.Queue(0) if restartQueues else actorState.queues[tid]
+
+            if inspect.ismodule(thread):
+                threadTarget = thread.main
+                threadModule = thread
+            else:
+                threadTarget = thread
+                threadModule = sys.modules[thread.__module__]
 
             if restart:
                 reload(threadModule)
@@ -651,7 +658,7 @@ class SDSSActor(Actor):
 
                 tname = re.sub(r"^([^\d]*)(?:-(\d*))?$", updateName, actorState.threads[tid].name)
 
-            actorState.threads[tid] = threading.Thread(target=threadModule.main, name=tname,
+            actorState.threads[tid] = threading.Thread(target=threadTarget, name=tname,
                                                        args=[actorState.actor, newQueues])
             actorState.threads[tid].daemon = True
 
