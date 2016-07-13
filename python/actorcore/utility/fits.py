@@ -136,6 +136,75 @@ def apoCards(models, cmd=None):
 
     return cards
 
+def lcoTCCCards(models, cmd=None):
+    """ Return a list of pyfits Cards describing the TCC state. """
+
+    cards = []
+
+    tccDict = models['tcc'].keyVarDict
+
+    try:
+        objSys = tccDict['objSys']
+        objSysName = str(objSys[0])
+        objSysDate = float(objSys[1])
+    except Exception, e:
+        objSysName = 'unknown'
+        objSysDate = 0.0
+        if cmd:
+            cmd.warn('text="could not get objsys and epoch from tcc.objSys=%s"' % (objSys))
+    cards.append(makeCard(cmd, 'OBJSYS', objSysName, "The TCC objSys"))
+
+    if objSysName in ('None', 'Mount', 'Obs', 'Phys', 'Inst'):
+        cards.append(makeCard(cmd, 'RA', 'NaN', 'Telescope is not tracking the sky'))
+        cards.append(makeCard(cmd, 'DEC', 'NaN', 'Telescope is not tracking the sky'))
+        cards.append(makeCard(cmd, 'RADEG', 'NaN', 'Telescope is not tracking the sky'))
+        cards.append(makeCard(cmd, 'DECDEG', 'NaN', 'Telescope is not tracking the sky'))
+        cards.append(makeCard(cmd, 'SPA', 'NaN', 'Telescope is not tracking the sky'))
+    else:
+        cards.append(makeCardFromKey(cmd, tccDict, 'objNetPos', 'RADEG',
+                                     cnv=_cnvPVTPosCard, idx=0,
+                                     comment='RA of telescope pointing(deg)',
+                                     onFail='NaN'))
+        cards.append(makeCardFromKey(cmd, tccDict, 'objNetPos', 'DECDEG',
+                                     cnv=_cnvPVTPosCard, idx=1,
+                                     comment='Dec of telescope pointing (deg)',
+                                     onFail='NaN'))
+
+    cards.append(makeCardFromKey(cmd, tccDict, 'rotPos', 'ROTPOS',
+                                 cnv=_cnvPVTPosCard,
+                                 idx=0, comment='Rotator request position (deg)',
+                                 onFail='NaN'))
+
+    cards.append(makeCardFromKey(cmd, tccDict, 'axePos', 'AZ',
+                                 cnv=float,
+                                 idx=0, comment='Azimuth axis pos. (approx, deg)',
+                                 onFail='NaN'))
+    cards.append(makeCardFromKey(cmd, tccDict, 'axePos', 'ALT',
+                                 cnv=float,
+                                 idx=1, comment='Altitude axis pos. (approx, deg)',
+                                 onFail='NaN'))
+    cards.append(makeCardFromKey(cmd, tccDict, 'axePos', 'IPA',
+                                 cnv=float,
+                                 idx=2, comment='Rotator axis pos. (approx, deg)',
+                                 onFail='NaN'))
+
+    cards.append(makeCardFromKey(cmd, tccDict, 'secFocus', 'FOCUS',
+                                 idx=0, cnv=float,
+                                 comment='User-specified focus offset (um)',
+                                 onFail='NaN'))
+    try:
+        secOrient = tccDict['secOrient']
+        orientNames = ('piston', 'xtilt', 'ytilt', 'xtran', 'ytran', 'zrot')
+        for i in range(len(orientNames)):
+            cards.append(makeCard(cmd, 'M2'+orientNames[i], float(secOrient[i]), 'TCC SecOrient'))
+    except Exception as e:
+        cmd.warn("text='failed to generate the SecOrient cards: %s'" % (e))
+
+    cards.append(makeCardFromKey(cmd, tccDict, 'scaleFac', 'SCALE',
+                                 idx=0, cnv=float,
+                                 comment='User-specified scale factor',
+                                 onFail='NaN'))
+    return cards
 
 def tccCards(models, cmd=None):
     """ Return a list of pyfits Cards describing the TCC state. """
