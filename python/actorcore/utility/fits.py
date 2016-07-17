@@ -8,6 +8,7 @@ import gzip
 import tempfile
 import logging
 
+
 def extendHeader(cmd, header, cards):
     """ Add all the cards to the header. """
 
@@ -16,6 +17,7 @@ def extendHeader(cmd, header, cards):
             header.update(name, val, comment)
         except:
             cmd.warn('text="failed to add card: %s=%s (%s)"' % (name, val, comment))
+
 
 def makeCard(cmd, name, value, comment=''):
     """ Creates a pyfits Card. Does not raise exceptions. """
@@ -26,6 +28,7 @@ def makeCard(cmd, name, value, comment=''):
         errStr = 'failed to make %s card from %s' % (name, value)
         cmd.warn('text=%s' % (qstr(errStr)))
         return ('comment', errStr, '')
+
 
 def makeCardFromKey(cmd, keyDict, keyName, cardName, cnv=None, idx=None, comment='', onFail=None):
     """
@@ -73,6 +76,7 @@ def makeCardFromKey(cmd, keyDict, keyName, cardName, cnv=None, idx=None, comment
 
     return makeCard(cmd, cardName, val, comment)
 
+
 def mcpCards(models, cmd=None):
     """ Return a list of pyfits Cards describing the MCP state. """
 
@@ -100,6 +104,7 @@ def mcpCards(models, cmd=None):
     d.append(card)
 
     return d
+
 
 def apoCards(models, cmd=None):
     """ Return a list of pyfits Cards describing APO weather state. """
@@ -252,7 +257,6 @@ def tccCards(models, cmd=None):
                                      idx=0, comment='TCC SpiderInstAng',
                                      onFail='NaN'))
 
-
     cards.append(makeCardFromKey(cmd, tccDict, 'rotType', 'ROTTYPE',
                                  cnv=str,
                                  idx=0, comment='Rotator request type',
@@ -320,6 +324,7 @@ def tccCards(models, cmd=None):
                                  onFail='NaN'))
     return cards
 
+
 def plateCards(models, cmd):
     """ Return a list of pyfits Cards describing the plate/cartrige/pointing"""
 
@@ -367,6 +372,7 @@ def plateCards(models, cmd):
 
     return cards
 
+
 def guiderCards(models, cmd):
     """Return a list of pyfits Cards describing the current guider status."""
     try:
@@ -389,6 +395,7 @@ def guiderCards(models, cmd):
     #cards.append(makeCard(cmd, 'TRANSPAR', name, 'Mean of guider transparancy'))
     return cards
 
+
 def _cnvListCard(val, itemCnv=int):
     """ Stupid utility to cons up a single string card from a list. """
 
@@ -400,11 +407,13 @@ def _cnvPVTPosCard(pvt, atTime=None):
     except:
         return numpy.nan
 
+
 def _cnvPVTVelCard(pvt):
     try:
         return pvt.getVel()
     except:
          return numpy.nan
+
 
 def writeFits(cmd, hdu, directory, filename, doCompress=False, chmod=0444,
               checksum=True, caller='', output_verify='warn'):
@@ -445,8 +454,8 @@ def writeFits(cmd, hdu, directory, filename, doCompress=False, chmod=0444,
         # filename, but it won't collide with anything else.
         # We can us mode 'wb' here, because we close the file after reading,
         # and the tempfile means it has a unique name, and will not already exist.
-        tempFile = tempfile.NamedTemporaryFile(dir=directory,mode='wb',
-                                               suffix=suffix,prefix=filename+'.',
+        tempFile = tempfile.NamedTemporaryFile(dir=directory, mode='wb',
+                                               suffix=suffix, prefix=filename+'.',
                                                delete=False)
         tempName = tempFile.name
 

@@ -852,7 +852,8 @@ class ActorTester(object):
                 productName = self.name+'Actor'
             else:
                 productName = self.name
-            self.actor = FakeActor.newActor(self.name,productName=productName,cmd=self.cmd)
+            self.actor = FakeActor.newActor(self.name, productName=productName,
+                                            cmd=self.cmd, attachCmdSets=self.attachCmdSets)
 
         self.actorState = ActorState(cmd=self.cmd,models=models.keys(),modelParams=models.values())
         self.actorState.actor = self.actor
@@ -991,7 +992,8 @@ class FakeActor(Actor.SDSSActor):
         """Default to APO, but allow setting the location. Just init a fakeActor."""
         return FakeActor(name, location=location, **kwargs)
 
-    def __init__(self, name, productName=None, cmd=None, configFile=None, location=None):
+    def __init__(self, name, productName=None, cmd=None, configFile=None,
+                 location=None, attachCmdSets=True):
         self.name = name
         self.location = location
         self.productName = productName if productName else self.name
@@ -1021,7 +1023,8 @@ class FakeActor(Actor.SDSSActor):
 
         self.commandSets = {}
         self.handler = validation.CommandHandler()
-        self.attachAllCmdSets()
+        if attachCmdSets:
+            self.attachAllCmdSets()
 
     def sendVersionKey(self,cmd):
         cmd.inform("version=FAKE!")

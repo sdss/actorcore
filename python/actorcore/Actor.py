@@ -86,9 +86,9 @@ class Msg(object):
 class ModLoader(object):
     def load_module(self, fullpath, name):
         """ Try to load a named module in the given path.
- 
+
         The imp.find_module() docs give the following boring prescription:
- 
+
           'This function does not handle hierarchical module names
           (names containing dots). In order to find P.M, that is,
           submodule M of package P, use find_module() and
@@ -173,7 +173,7 @@ class Actor(object):
         self.productName = productName if productName else self.name
         product_dir_name = '$%s_DIR' % (self.productName.upper())
         self.product_dir = os.path.expandvars(product_dir_name)
-        
+
         if not self.product_dir:
             raise RuntimeError('environment variable %s must be defined' % (product_dir_name))
 
@@ -209,7 +209,7 @@ class Actor(object):
 
         self.logger.info("Creating validation handler...")
         self.handler = validation.CommandHandler()
-        
+
         self.logger.info("Attaching actor command sets...")
         self.attachAllCmdSets()
         self.logger.info("All command sets attached...")
@@ -234,7 +234,7 @@ class Actor(object):
 
     def configureLogs(self, cmd=None):
         """ (re-)configure our logs. """
-        
+
         self.logDir = self.config.get('logging', 'logdir')
         assert self.logDir, "logdir must be set!"
 
@@ -247,11 +247,11 @@ class Actor(object):
         except:
             consoleLevel = int(self.config.get('logging','baseLevel'))
         setConsoleLevel(consoleLevel)
-        
+
         # self.console needs to be renamed ore deleted, I think.
         self.console = logging.getLogger('')
         self.console.setLevel(int(self.config.get('logging','baseLevel')))
- 
+
         self.logger = logging.getLogger('actor')
         self.logger.setLevel(int(self.config.get('logging','baseLevel')))
         self.logger.propagate = True
@@ -261,10 +261,10 @@ class Actor(object):
         self.cmdLog.setLevel(int(self.config.get('logging','cmdLevel')))
         self.cmdLog.propagate = True
         self.cmdLog.info('(re-)configured cmds log')
-        
+
         if cmd:
             cmd.inform('text="reconfigured logs"')
-            
+
     def versionString(self, cmd):
         """ Return the version key value.
 
@@ -283,7 +283,7 @@ class Actor(object):
             cmd.warn("text='pathetic version string: %s'" % (versionString))
 
         return versionString
-        
+
     def sendVersionKey(self, cmd):
         """ Generate the version keyword in response to cmd. """
 
@@ -300,7 +300,7 @@ class Actor(object):
         self.bcast.warn('%s is asking the hub to connect back to us' % (self.name))
         self.cmdr.dispatcher.executeCmd(opscore.actor.keyvar.CmdVar
                                         (actor='hub', cmdStr='startNubs %s' % (self.name), timeLim=5.0))
-                        
+
     def _connectionMade(self):
         """ twisted arranges to call this when self.cmdr has been established. """
 
@@ -373,7 +373,7 @@ class Actor(object):
         self.handler.addConsumers(*cmdSet.validatedCmds)
 
         self.logger.debug("handler verbs: %s" % (self.handler.consumers.keys()))
-        
+
     def attachAllCmdSets(self, path=None):
         """ (Re-)load all command classes -- files in ./Command which end with Cmd.py.
         """
@@ -399,13 +399,13 @@ class Actor(object):
         where = tbList[-1]
 
         return "%r at %s:%d" % (eValue, where[0], where[1])
-                
-    
+
+
     def runActorCmd(self, cmd):
         try:
             cmdStr = cmd.rawCmd
             self.cmdLog.debug('raw cmd: %s' % (cmdStr))
-            
+
             try:
                 validatedCmd, cmdFuncs = self.handler.match(cmdStr)
             except Exception as e:
@@ -417,7 +417,7 @@ class Actor(object):
             if not validatedCmd:
                 cmd.fail('text=%s' % (qstr("Unrecognized command: %s" % (cmdStr))))
                 return
-                
+
             self.cmdLog.info('< %s:%d %s' % (cmd.cmdr, cmd.mid, validatedCmd))
             if len(cmdFuncs) > 1:
                 cmd.warn('text=%s' % (qstr("command has more than one callback (%s): %s" %
@@ -431,7 +431,7 @@ class Actor(object):
                 cmd.fail('text=%s' % (qstr("command failed: %s" % (oneLiner))))
                 #tback('newCmd', e)
                 return
-                
+
         except Exception as e:
             cmd.fail('text=%s' % (qstr("completely unexpected exception when processing a new command: %s" %
                                        (e))))
@@ -440,7 +440,7 @@ class Actor(object):
             except:
                 pass
 
-        
+
     def actor_loop(self):
         """ Check the command queue and dispatch commands."""
 
@@ -457,12 +457,12 @@ class Actor(object):
     def commandFailed(self, cmd):
         """ Gets called when a command has failed. """
         pass
-    
+
     def newCmd(self, cmd):
         """ Dispatch a newly received command. """
 
         self.cmdLog.info('new cmd: %s' % (cmd))
-        
+
         # Empty cmds are OK; send an empty response...
         if len(cmd.rawCmd) == 0:
             cmd.finish('')
@@ -474,7 +474,7 @@ class Actor(object):
             self.commandQueue.put(cmd)
 
         return self
-    
+
     def callCommand(self, cmdStr):
         """ Send ourselves a command. """
 
@@ -482,17 +482,17 @@ class Actor(object):
                                cid=self.selfCID, mid=self.synthMID, rawCmd=cmdStr)
         self.synthMID += 1
         self.newCmd(cmd)
-                                                            
+
     def _shutdown(self):
         self.shuttingDown = True
-        
+
     def run(self, doReactor=True):
         """ Actually run the twisted reactor. """
         try:
             self.runInReactorThread = self.config.getboolean(self.name, 'runInReactorThread')
         except:
             self.runInReactorThread = False
-            
+
         self.logger.info("starting reactor (in own thread=%s)...." % (not self.runInReactorThread))
         try:
             if not self.runInReactorThread:
@@ -530,12 +530,14 @@ class SDSSActor(Actor):
         if location is None:
             fqdn = socket.getfqdn()
         else:
-            return location
+            return location.upper()
 
         if 'apo' in fqdn:
             return 'APO'
         elif 'lco' in fqdn:
             return 'LCO'
+        elif 'ACTORCORE_LOCAL' in os.environ and os.environ['ACTORCORE_LOCAL'] == '1':
+            return 'LOCAL'
         else:
             return None
 
@@ -579,7 +581,7 @@ class SDSSActor(Actor):
             self.runInReactorThread = self.config.getboolean(self.name, 'runInReactorThread')
         except:
             self.runInReactorThread = False
-            
+
         self.logger.info("starting reactor (in own thread=%s)...." % (not self.runInReactorThread))
         try:
             if not self.runInReactorThread:
@@ -613,7 +615,7 @@ class SDSSActor(Actor):
 
         if getattr(actorState,"threads",None) is None:
             restart = False # nothing to restart!
-        
+
         if not restart:
             actorState.queues = {}
             actorState.threads = {}
@@ -630,9 +632,16 @@ class SDSSActor(Actor):
 
         newQueues = {}
         threadsToStart = []
-        for tname, tid, threadModule in self.threadList:
+        for tname, tid, thread in self.threadList:
 
             newQueues[tid] = Queue.Queue(0) if restartQueues else actorState.queues[tid]
+
+            if inspect.ismodule(thread):
+                threadTarget = thread.main
+                threadModule = thread
+            else:
+                threadTarget = thread
+                threadModule = sys.modules[thread.__module__]
 
             if restart:
                 reload(threadModule)
@@ -649,7 +658,7 @@ class SDSSActor(Actor):
 
                 tname = re.sub(r"^([^\d]*)(?:-(\d*))?$", updateName, actorState.threads[tid].name)
 
-            actorState.threads[tid] = threading.Thread(target=threadModule.main, name=tname,
+            actorState.threads[tid] = threading.Thread(target=threadTarget, name=tname,
                                                        args=[actorState.actor, newQueues])
             actorState.threads[tid].daemon = True
 
