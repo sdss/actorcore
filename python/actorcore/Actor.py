@@ -564,7 +564,7 @@ class SDSSActor(Actor):
                     self.attachCmdSet(f[:-3], [path])
 
 
-    def run(self, Msg=None, startThreads=True, doReactor=True):
+    def run(self, Msg=None, startThreads=True, doReactor=True, queueClass=None):
         """
         Start any pre-definted threads and the twisted reactor.
 
@@ -572,10 +572,18 @@ class SDSSActor(Actor):
             Msg (subclass of actorstate.Msg): if defined, use this to start the
             actor's threads.
             doReactor (bool): call twisted's reactor.run(), and cleanup when finished.
+            queueClass (class): The Queue class to use. If None, uses Queue.Queue.
+                This is mostly intended for sopActor, which uses its own subclass
+                of Queue.
+
         """
 
+        if not queueClass:
+            queueClass = Queue.Queue
+
         if Msg is not None:
-            self.startThreads(Msg, restartQueues=True, restart=False)
+            self.startThreads(Msg, restartQueues=True, restart=False,
+                              queueClass=queueClass)
 
         try:
             self.runInReactorThread = self.config.getboolean(self.name, 'runInReactorThread')
@@ -596,7 +604,8 @@ class SDSSActor(Actor):
             self._shutdown()
 
 
-    def startThreads(self, Msg, cmd=None, restart=False, restartQueues=False):
+    def startThreads(self, Msg, cmd=None, restart=False, restartQueues=False,
+                     queueClass=None):
         """
         Start or restart the worker threads (from self.threadList) and queues.
 
@@ -610,8 +619,14 @@ class SDSSActor(Actor):
             restart (bool): restart all running threads and clear all queues.
                 Implies restartQueues=True.
             restartQueues (bool): Create new empty queues for each thread.
+            queueClass (class): The Queue class to use. If None, uses Queue.Queue.
+                This is mostly intended for sopActor, which uses its own subclass
+                of Queue.
         """
         actorState = self.actorState
+
+        if queueClass is None:
+            queueClass = Queue.Queue
 
         if getattr(actorState,"threads",None) is None:
             restart = False # nothing to restart!
@@ -634,7 +649,7 @@ class SDSSActor(Actor):
         threadsToStart = []
         for tname, tid, thread in self.threadList:
 
-            newQueues[tid] = Queue.Queue(0) if restartQueues else actorState.queues[tid]
+            newQueues[tid] = queueClass(0) if restartQueues else actorState.queues[tid]
 
             if inspect.ismodule(thread):
                 threadTarget = thread.main
