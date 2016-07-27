@@ -180,13 +180,17 @@ def lcoTCCCards(models, cmd=None):
                                  idx=0, comment='Rotator request position (deg)',
                                  onFail='NaN'))
 
-    cards.append(makeCardFromKey(cmd, tccDict, 'axePos', 'AZ',
+    cards.append(makeCardFromKey(cmd, tccDict, 'axePos', 'RA',
                                  cnv=float,
-                                 idx=0, comment='Azimuth axis pos. (approx, deg)',
+                                 idx=0, comment='RA axis pos. (approx, deg)',
                                  onFail='NaN'))
-    cards.append(makeCardFromKey(cmd, tccDict, 'axePos', 'ALT',
+    cards.append(makeCardFromKey(cmd, tccDict, 'axePos', 'DEC',
                                  cnv=float,
-                                 idx=1, comment='Altitude axis pos. (approx, deg)',
+                                 idx=1, comment='DEC axis pos. (approx, deg)',
+                                 onFail='NaN'))
+    cards.append(makeCardFromKey(cmd, tccDict, 'tccHA', 'HA',
+                                 cnv=float,
+                                 idx=0, comment='HA axis pos. (approx, deg)',
                                  onFail='NaN'))
     cards.append(makeCardFromKey(cmd, tccDict, 'axePos', 'IPA',
                                  cnv=float,
@@ -197,6 +201,35 @@ def lcoTCCCards(models, cmd=None):
                                  idx=0, cnv=float,
                                  comment='User-specified focus offset (um)',
                                  onFail='NaN'))
+
+    # temps
+    cards.append(makeCardFromKey(cmd, tccDict, 'tccTemps', 'T_OUT',
+                                 idx=0, cnv=float,
+                                 comment='Outside temperature deg C.',
+                                 onFail='NaN'))
+
+    cards.append(makeCardFromKey(cmd, tccDict, 'tccTemps', 'T_IN',
+                                 idx=1, cnv=float,
+                                 comment='Inside temperature deg C.',
+                                 onFail='NaN'))
+
+    cards.append(makeCardFromKey(cmd, tccDict, 'tccTemps', 'T_PRIM',
+                             idx=2, cnv=float,
+                             comment='Primary mirror temperature deg C.',
+                             onFail='NaN'))
+    cards.append(makeCardFromKey(cmd, tccDict, 'tccTemps', 'T_CELL',
+                             idx=3, cnv=float,
+                             comment='Cell temperature deg C.',
+                             onFail='NaN'))
+    cards.append(makeCardFromKey(cmd, tccDict, 'tccTemps', 'T_FLOOR',
+                             idx=4, cnv=float,
+                             comment='Floor temperature deg C.',
+                             onFail='NaN'))
+    cards.append(makeCardFromKey(cmd, tccDict, 'secTrussTemp', 'T_TRUSS',
+                             idx=0, cnv=float,
+                             comment='Truss temperature deg C. Used for automatic focus correction',
+                             onFail='NaN'))
+
     try:
         secOrient = tccDict['secOrient']
         orientNames = ('piston', 'xtilt', 'ytilt', 'xtran', 'ytran', 'zrot')
