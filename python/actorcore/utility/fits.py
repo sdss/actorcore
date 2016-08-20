@@ -242,6 +242,16 @@ def lcoTCCCards(models, cmd=None):
                                  idx=0, cnv=float,
                                  comment='User-specified scale factor',
                                  onFail='NaN'))
+
+    cards.append(makeCardFromKey(cmd, tccDict, 'threadringPos', 'TRPOS',
+                                 idx=0, cnv=float,
+                                 comment='Motor position of thread ring mm',
+                                 onFail='NaN'))
+    cards.append(makeCardFromKey(cmd, tccDict, 'scaleZeroPos', 'TRZERO',
+                                 idx=0, cnv=float,
+                                 comment='Motor position where scale = 1',
+                                 onFail='NaN'))
+
     return cards
 
 def tccCards(models, cmd=None):
