@@ -137,6 +137,9 @@ mangaStareLoaded = {'cartridgeLoaded':[2,3001,'A',54321,3], 'survey':['MaNGA','M
 apogeemangaDitherLoaded = {'cartridgeLoaded':[3,4000,'A',54321,4], 'survey':['APOGEE-2&MaNGA','MaNGA Dither'], 'loadedNewCartridge':[]}
 apogeemangaStareLoaded = {'cartridgeLoaded':[3,4000,'A',54321,4], 'survey':['APOGEE-2&MaNGA','MaNGA Stare'], 'loadedNewCartridge':[]}
 apogeeLeadLoaded = {'cartridgeLoaded':[3,4000,'A',54321,4], 'survey':['APOGEE-2&MaNGA','APOGEE Lead'], 'loadedNewCartridge':[]}
+apogeemangaLoadedNoSurveyMode = {'cartridgeLoaded': [3, 4000, 'A', 54321, 4],
+                                 'survey': ['APOGEE-2&MaNGA', 'None'],
+                                 'loadedNewCartridge': []}
 noDecenter = {'decenter':[0,'disabled',0,0,0,0,0]}
 yesDecenter = {'decenter':[0,'enabled',0,0,0,0,0]}
 guiderOn = {'guideState':['on'], 'file':['/tmp/','proc-gimg-1234.fits.gz']}
@@ -161,6 +164,9 @@ guiderState['apogeeLoaded'] = merge_dicts(guiderOff,apogeeLoaded,mangaC)
 guiderState['mangaStareLoaded'] = merge_dicts(guiderOff,mangaDitherLoaded,mangaC)
 guiderState['mangaDitherLoaded'] = merge_dicts(guiderOff,mangaStareLoaded,mangaC)
 guiderState['apogeemangaDitherLoaded'] = merge_dicts(guiderOff,apogeemangaDitherLoaded,mangaC)
+guiderState['apogeemangaNoneLoaded'] = merge_dicts(guiderOff,
+                                                   apogeemangaLoadedNoSurveyMode,
+                                                   mangaC)
 guiderState['apogeemangaStareLoaded'] = merge_dicts(guiderOff,apogeemangaStareLoaded,mangaC)
 guiderState['apogeeLeadLoaded'] = merge_dicts(guiderOff,apogeeLeadLoaded,mangaC)
 guiderState['guiderOn'] = merge_dicts(guiderOn,bossLoaded,mangaC)
