@@ -252,6 +252,20 @@ def lcoTCCCards(models, cmd=None):
                                  comment='Motor position where scale = 1',
                                  onFail='NaN'))
 
+    cards.append(makeCardFromKey(cmd, tccDict, "airmass", "ARMASS",
+                                 idx=0, cnv=float,
+                                 comment="Airmass", onFail="NaN"))
+    cards.append(makeCardFromKey(cmd, tccDict, "ffPower", "FFPWR",
+                                 idx=0, cnv=str,
+                                 comment="Flat field power on", onFail="NaN"))
+    cards.append(makeCardFromKey(cmd, tccDict, "ffCurrent", "FFI",
+                                 idx=0, cnv=str,
+                                 comment="Flat field current (A)", onFail="NaN"))
+    cards.append(makeCardFromKey(cmd, tccDict, "ffVoltage", "FFV",
+                             idx=0, cnv=str,
+                             comment="Flat field voltage (A)", onFail="NaN"))
+
+
     return cards
 
 def tccCards(models, cmd=None):
