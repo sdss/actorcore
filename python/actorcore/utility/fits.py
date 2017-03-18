@@ -159,25 +159,14 @@ def lcoTCCCards(models, cmd=None):
             cmd.warn('text="could not get objsys and epoch from tcc.objSys=%s"' % (objSys))
     cards.append(makeCard(cmd, 'OBJSYS', objSysName, "The TCC objSys"))
 
-    if objSysName in ('None', 'Mount', 'Obs', 'Phys', 'Inst'):
-        cards.append(makeCard(cmd, 'RA', 'NaN', 'Telescope is not tracking the sky'))
-        cards.append(makeCard(cmd, 'DEC', 'NaN', 'Telescope is not tracking the sky'))
-        cards.append(makeCard(cmd, 'RADEG', 'NaN', 'Telescope is not tracking the sky'))
-        cards.append(makeCard(cmd, 'DECDEG', 'NaN', 'Telescope is not tracking the sky'))
-        cards.append(makeCard(cmd, 'SPA', 'NaN', 'Telescope is not tracking the sky'))
-    else:
-        cards.append(makeCardFromKey(cmd, tccDict, 'objNetPos', 'RADEG',
-                                     cnv=_cnvPVTPosCard, idx=0,
-                                     comment='RA of telescope pointing(deg)',
-                                     onFail='NaN'))
-        cards.append(makeCardFromKey(cmd, tccDict, 'objNetPos', 'DECDEG',
-                                     cnv=_cnvPVTPosCard, idx=1,
-                                     comment='Dec of telescope pointing (deg)',
-                                     onFail='NaN'))
 
-    cards.append(makeCardFromKey(cmd, tccDict, 'rotPos', 'ROTPOS',
-                                 cnv=_cnvPVTPosCard,
-                                 idx=0, comment='Rotator request position (deg)',
+    cards.append(makeCardFromKey(cmd, tccDict, 'objNetPos', 'RADEG',
+                                 cnv=_cnvPVTPosCard, idx=0,
+                                 comment='RA of telescope pointing(deg)',
+                                 onFail='NaN'))
+    cards.append(makeCardFromKey(cmd, tccDict, 'objNetPos', 'DECDEG',
+                                 cnv=_cnvPVTPosCard, idx=1,
+                                 comment='Dec of telescope pointing (deg)',
                                  onFail='NaN'))
 
     cards.append(makeCardFromKey(cmd, tccDict, 'axePos', 'RA',
@@ -243,9 +232,9 @@ def lcoTCCCards(models, cmd=None):
                                  comment='User-specified scale factor',
                                  onFail='NaN'))
 
-    cards.append(makeCardFromKey(cmd, tccDict, 'threadringPos', 'TRPOS',
+    cards.append(makeCardFromKey(cmd, tccDict, 'threadringEncPos', 'TRPOS',
                                  idx=0, cnv=float,
-                                 comment='Motor position of thread ring mm',
+                                 comment='Average position of Mitutoyo scale ring gauges mm',
                                  onFail='NaN'))
     cards.append(makeCardFromKey(cmd, tccDict, 'scaleZeroPos', 'TRZERO',
                                  idx=0, cnv=float,
