@@ -141,6 +141,121 @@ def apoCards(models, cmd=None):
 
     return cards
 
+def lcoTCCCards(models, cmd=None):
+    """ Return a list of pyfits Cards describing the TCC state. """
+
+    cards = []
+
+    tccDict = models['tcc'].keyVarDict
+
+    try:
+        objSys = tccDict['objSys']
+        objSysName = str(objSys[0])
+        objSysDate = float(objSys[1])
+    except Exception, e:
+        objSysName = 'unknown'
+        objSysDate = 0.0
+        if cmd:
+            cmd.warn('text="could not get objsys and epoch from tcc.objSys=%s"' % (objSys))
+    cards.append(makeCard(cmd, 'OBJSYS', objSysName, "The TCC objSys"))
+
+
+    cards.append(makeCardFromKey(cmd, tccDict, 'objNetPos', 'RADEG',
+                                 cnv=_cnvPVTPosCard, idx=0,
+                                 comment='RA of telescope pointing(deg)',
+                                 onFail='NaN'))
+    cards.append(makeCardFromKey(cmd, tccDict, 'objNetPos', 'DECDEG',
+                                 cnv=_cnvPVTPosCard, idx=1,
+                                 comment='Dec of telescope pointing (deg)',
+                                 onFail='NaN'))
+
+    cards.append(makeCardFromKey(cmd, tccDict, 'axePos', 'RA',
+                                 cnv=float,
+                                 idx=0, comment='RA axis pos. (approx, deg)',
+                                 onFail='NaN'))
+    cards.append(makeCardFromKey(cmd, tccDict, 'axePos', 'DEC',
+                                 cnv=float,
+                                 idx=1, comment='DEC axis pos. (approx, deg)',
+                                 onFail='NaN'))
+    cards.append(makeCardFromKey(cmd, tccDict, 'tccHA', 'HA',
+                                 cnv=float,
+                                 idx=0, comment='HA axis pos. (approx, deg)',
+                                 onFail='NaN'))
+    cards.append(makeCardFromKey(cmd, tccDict, 'axePos', 'IPA',
+                                 cnv=float,
+                                 idx=2, comment='Rotator axis pos. (approx, deg)',
+                                 onFail='NaN'))
+
+    cards.append(makeCardFromKey(cmd, tccDict, 'secFocus', 'FOCUS',
+                                 idx=0, cnv=float,
+                                 comment='User-specified focus offset (um)',
+                                 onFail='NaN'))
+
+    # temps
+    cards.append(makeCardFromKey(cmd, tccDict, 'tccTemps', 'T_OUT',
+                                 idx=0, cnv=float,
+                                 comment='Outside temperature deg C.',
+                                 onFail='NaN'))
+
+    cards.append(makeCardFromKey(cmd, tccDict, 'tccTemps', 'T_IN',
+                                 idx=1, cnv=float,
+                                 comment='Inside temperature deg C.',
+                                 onFail='NaN'))
+
+    cards.append(makeCardFromKey(cmd, tccDict, 'tccTemps', 'T_PRIM',
+                             idx=2, cnv=float,
+                             comment='Primary mirror temperature deg C.',
+                             onFail='NaN'))
+    cards.append(makeCardFromKey(cmd, tccDict, 'tccTemps', 'T_CELL',
+                             idx=3, cnv=float,
+                             comment='Cell temperature deg C.',
+                             onFail='NaN'))
+    cards.append(makeCardFromKey(cmd, tccDict, 'tccTemps', 'T_FLOOR',
+                             idx=4, cnv=float,
+                             comment='Floor temperature deg C.',
+                             onFail='NaN'))
+    cards.append(makeCardFromKey(cmd, tccDict, 'secTrussTemp', 'T_TRUSS',
+                             idx=0, cnv=float,
+                             comment='Truss temperature deg C. Used for automatic focus correction',
+                             onFail='NaN'))
+
+    try:
+        secOrient = tccDict['secOrient']
+        orientNames = ('piston', 'xtilt', 'ytilt', 'xtran', 'ytran', 'zrot')
+        for i in range(len(orientNames)):
+            cards.append(makeCard(cmd, 'M2'+orientNames[i], float(secOrient[i]), 'TCC SecOrient'))
+    except Exception as e:
+        cmd.warn("text='failed to generate the SecOrient cards: %s'" % (e))
+
+    cards.append(makeCardFromKey(cmd, tccDict, 'scaleFac', 'SCALE',
+                                 idx=0, cnv=float,
+                                 comment='User-specified scale factor',
+                                 onFail='NaN'))
+
+    cards.append(makeCardFromKey(cmd, tccDict, 'threadringEncPos', 'TRPOS',
+                                 idx=0, cnv=float,
+                                 comment='Average position of Mitutoyo scale ring gauges mm',
+                                 onFail='NaN'))
+    cards.append(makeCardFromKey(cmd, tccDict, 'scaleZeroPos', 'TRZERO',
+                                 idx=0, cnv=float,
+                                 comment='Motor position where scale = 1',
+                                 onFail='NaN'))
+
+    cards.append(makeCardFromKey(cmd, tccDict, "airmass", "ARMASS",
+                                 idx=0, cnv=float,
+                                 comment="Airmass", onFail="NaN"))
+    cards.append(makeCardFromKey(cmd, tccDict, "ffPower", "FFPWR",
+                                 idx=0, cnv=str,
+                                 comment="Flat field power on", onFail="NaN"))
+    cards.append(makeCardFromKey(cmd, tccDict, "ffCurrent", "FFI",
+                                 idx=0, cnv=str,
+                                 comment="Flat field current (A)", onFail="NaN"))
+    cards.append(makeCardFromKey(cmd, tccDict, "ffVoltage", "FFV",
+                             idx=0, cnv=str,
+                             comment="Flat field voltage (A)", onFail="NaN"))
+
+
+    return cards
 
 def tccCards(models, cmd=None):
     """ Return a list of pyfits Cards describing the TCC state. """
@@ -285,8 +400,8 @@ def plateCards(models, cmd):
         survey = models['sop'].keyVarDict['survey']
         plateType, surveyMode = survey
     except Exception as e:
-        plateType = "sop.survey %s: %s"%(type(e).__name__, e)
-        surveyMode = plateType
+       plateType = "sop.survey %s: %s"%(type(e).__name__, e)
+       surveyMode = plateType
 
     cards = []
     cards.append(makeCardFromKey(cmd, models['guider'].keyVarDict, 'version', 'v_guider', comment='version of the current guiderActor', onFail='Unknown'))
@@ -331,7 +446,6 @@ def _cnvListCard(val, itemCnv=int):
     """ Stupid utility to cons up a single string card from a list. """
 
     return " ".join([str(itemCnv(v)) for v in val])
-
 
 def _cnvPVTPosCard(pvt, atTime=None):
     try:

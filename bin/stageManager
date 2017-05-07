@@ -32,7 +32,7 @@ check_user_host() {
     if [ $verbose = 1 ]; then
         echo "You are $USER@$HOSTNAME..."
     fi
-    
+
     # read the config file. Stolen from:
     # http://stackoverflow.com/questions/4434797/read-a-config-file-in-bash-without-using-source
     i=0
@@ -53,14 +53,14 @@ check_user_host() {
         echo "Please add $PRODUCT to actorcore/etc/stageManager.cfg."
         return 1
     fi
-    
+
     # translate "@" into "\n", resulting in an array of [user,host]
     oldIFS="$IFS"
     IFS='@' read -a userhost <<< "${value[$j]}"
     IFS="$oldIFS"
-    
+
     ok=1
-    
+
     # check hostname
     if [[ $overridehost = 1 ]]; then
         echo "Overriding hostname requirement."
@@ -68,7 +68,7 @@ check_user_host() {
         ok=0
         echo "$PRODUCT must be run on host: ${userhost[1]}"
     fi
-    
+
     # check username
     if [[ $overrideuser = 1 ]]; then
         echo "Overriding username requirement."
@@ -76,7 +76,7 @@ check_user_host() {
         ok=0
         echo "$PRODUCT must be run as user: ${userhost[0]}"
     fi
-    
+
     return $ok
 }
 
@@ -117,18 +117,18 @@ if [ -z $PRODUCT ]; then
     usage
 fi
 
-PRODUCT_DIR=$(eups list -s -d $PRODUCT)
+eval PRODUCT_DIR=\$$(echo $(echo ${PRODUCT}_DIR | awk '{ print toupper($0) }'))
 
 if test -z "$PRODUCT_DIR"; then
     if [ $verbose = 1 ]; then
 	echo "Product $PRODUCT is not setup" >&2
     fi
 
-    setup $PRODUCT # > /dev/null 2>&1
+    module -v load $PRODUCT # > /dev/null 2>&1
 
-    PRODUCT_DIR=$(eups list -s -d $PRODUCT)
+    eval PRODUCT_DIR=\$$(echo $(echo ${PRODUCT}_DIR | awk '{ print toupper($0) }'))
     if test -z "$PRODUCT_DIR"; then
-	echo "Product $PRODUCT wasn't not setup, and I failed to set it up for you" >&2
+	echo "Product $PRODUCT $PRODUCT_DIR wasn't not setup, and I failed to set it up for you" >&2
 	exit 1
     fi
 fi
@@ -292,4 +292,3 @@ while true; do
 done
 
 exit 0
-
