@@ -85,13 +85,14 @@ exposureIdle = {'exposureState':['IDLE',0,0]}
 exposureIntegrating = {'exposureState':['INTEGRATING',900,100]}
 exposureReading = {'exposureState':['READING',60,10]}
 exposureAborted = {'exposureState':['ABORTED',0,0]}
+exposureLegible = {'exposureState':['LEGIBLE', 0, 0]}
 bossExposureId = {"exposureId":[1234500,], "BeginExposure":[1411421207,56922.89]}
 bossState = {}
 bossState['idle'] = merge_dicts(exposureIdle, bossExposureId)
 bossState['integrating'] = merge_dicts(exposureIntegrating, bossExposureId)
 bossState['reading'] = merge_dicts(exposureReading, bossExposureId)
 bossState['aborted'] = merge_dicts(exposureAborted, bossExposureId)
-
+bossState['legible'] = merge_dicts(exposureLegible, bossExposureId)
 
 # TCC state setup
 #NEWTCC: tccStatus is deprecated in the new TCC.
