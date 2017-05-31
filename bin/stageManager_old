@@ -1,0 +1,294 @@
+#!/usr/bin/env bash
+
+# setup $PRODUCT can change ACTORCORE_DIR, so save it.
+CURRENT_ACTORCORE_DIR=$ACTORCORE_DIR
+LOG_DIR=$HOME/logs
+verbose=0
+overrideuser=0
+overridehost=0
+
+usage() {
+    cat <<EOF >&2
+usage:
+stageManager [options] actorName command [command ...]
+where command is one of "start", "stop", "stopdead", "restart", "status",
+or a delay in seconds
+
+Control actors.
+
+Options:
+   -h, --help		Provide this paltry help
+   -l, --log DIR	Directory to write log files
+   --overrideuser   Force allow the command to run as the current user
+   --overridehost   Force allow the command to run on the current host
+   -v, --verbose	Be chatty
+EOF
+    exit 1
+}
+
+check_user_host() {
+    # Check user/hostname requirements, so we're running in the right place.
+    # Pass product name to check.
+    if [ $verbose = 1 ]; then
+        echo "You are $USER@$HOSTNAME..."
+    fi
+
+    # read the config file. Stolen from:
+    # http://stackoverflow.com/questions/4434797/read-a-config-file-in-bash-without-using-source
+    i=0
+    while read line; do
+        if [[ "$line" =~ ^[^#]*= ]]; then
+            name[i]=${line%% =*}
+            value[i]=${line#*= }
+            ((i++))
+        fi
+    done < $CURRENT_ACTORCORE_DIR/etc/stageManager.cfg
+    j=0
+    while [[ $1 != "${name[$j]}" && $j -le $i ]]; do
+        ((j++))
+    done
+    if (($j > $i)); then
+        echo "I have no user/host requirements for product $PRODUCT!"
+        echo "Assuming that it is safe to run as: $USER@$HOSTNAME..."
+        echo "Please add $PRODUCT to actorcore/etc/stageManager.cfg."
+        return 1
+    fi
+
+    # translate "@" into "\n", resulting in an array of [user,host]
+    oldIFS="$IFS"
+    IFS='@' read -a userhost <<< "${value[$j]}"
+    IFS="$oldIFS"
+
+    ok=1
+
+    # check hostname
+    if [[ $overridehost = 1 ]]; then
+        echo "Overriding hostname requirement."
+    elif [[ ! "$HOSTNAME" == "${userhost[1]}"* ]]; then
+        ok=0
+        echo "$PRODUCT must be run on host: ${userhost[1]}"
+    fi
+
+    # check username
+    if [[ $overrideuser = 1 ]]; then
+        echo "Overriding username requirement."
+    elif [[ ! "${userhost[0]}" = "$USER" ]]; then
+        ok=0
+        echo "$PRODUCT must be run as user: ${userhost[0]}"
+    fi
+
+    return $ok
+}
+
+while [ ! -z $1 ]; do
+    case $1 in
+      -h|--help)
+	    usage
+	    exit 0;;
+      -l|--logs)
+	    LOG_DIR=$HOME/logs
+
+	    if [ -z $LOG_DIR ]; then
+		echo "Please specify a logging directory with the $1 flag" >&2
+		exit 1
+	    fi
+	    shift;;
+      --overrideuser)
+          overrideuser=1;;
+      --overridehost)
+          overridehost=1;;
+      -v|--verbose)
+	    verbose=1;;
+      -*)
+	    echo "Unknown option: $1" >&2
+	    exit 1;;
+      *)
+	    break;;
+    esac
+    shift
+done
+
+#-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+PRODUCT=$1; shift
+
+if [ -z $PRODUCT ]; then
+    echo "Please specify a product to control" >&2
+    usage
+fi
+
+eval PRODUCT_DIR=\$$(echo $(echo ${PRODUCT}_DIR | awk '{ print toupper($0) }'))
+
+if test -z "$PRODUCT_DIR"; then
+    if [ $verbose = 1 ]; then
+	echo "Product $PRODUCT is not setup" >&2
+    fi
+
+    module -v load $PRODUCT # > /dev/null 2>&1
+
+    eval PRODUCT_DIR=\$$(echo $(echo ${PRODUCT}_DIR | awk '{ print toupper($0) }'))
+    if test -z "$PRODUCT_DIR"; then
+	echo "Product $PRODUCT $PRODUCT_DIR wasn't not setup, and I failed to set it up for you" >&2
+	exit 1
+    fi
+fi
+
+if [ $verbose = 1 ]; then
+    echo
+    echo ====================== Using $PRODUCT from $PRODUCT_DIR
+    echo
+fi
+
+if check_user_host $PRODUCT; then
+    echo "User/hostname verification failed!" >&2
+    exit 1
+fi
+
+# Put logs in a per-product directory.
+# The product itself might then stuff logs into subdirectories.
+PRODLOG_DIR=$LOG_DIR/$PRODUCT
+if [ ! -d $PRODLOG_DIR ]; then
+    mkdir -p $PRODLOG_DIR
+fi
+
+if test $# = 0; then
+    usage
+fi
+cmds="$@"
+
+cd $PRODUCT_DIR
+
+now() {
+    NOW=$(TZ=GMT date +"%Y-%m-%dT%H:%M:%S")
+
+    echo $NOW
+}
+
+# Return the program's pid, or the empty string.
+#
+get_pid() {
+    print=$1
+
+    PID=""
+    pid=$(/bin/ps -e -ww -o pid,user,command | egrep -v 'awk|grep' | awk "/python ${PRODUCT}_main.py/ {print \$1}")
+    PID=$pid
+
+    if [ "$print" = 1 -o $verbose != 0 ]; then
+	if test "$pid"; then
+            echo "$PRODUCT is running as process $pid"
+	else
+            echo "$PRODUCT is not running"
+	fi
+    fi
+}
+
+# Start a new ICC. Complains if the ICC is already running,
+# and does not start a new one.
+#
+do_start() {
+    get_pid
+
+    if test "$PID"; then
+        echo "NOT starting new $PRODUCT. Use restart if you want a new one."
+        return
+    fi
+
+    printf "Starting new $PRODUCT..."
+
+    # reset WWW access.
+    # sudoers: tron hub35m = NOPASSWD: /usr/local/bin/www-access, /bin/kill
+    #sudo /usr/local/bin/www-access reset
+
+
+    now=`now`.log
+    (cd $PRODLOG_DIR; rm -f current.log; ln -s $now current.log)
+    cd $PRODUCT_DIR/python/$PRODUCT
+    python ${PRODUCT}_main.py >$PRODLOG_DIR/$now 2>&1 &
+
+    # Check that it really started...
+    #
+    sleep 1
+    get_pid
+
+    if test "$PID"; then
+        echo " done."
+    else
+        echo " FAILED!" >&2
+    fi
+}
+
+# Stop any running ICC.
+#
+do_stop() {
+    get_pid
+
+    if test ! "$PID"; then
+        return
+    fi
+
+    echo "Stopping $PRODUCT."
+    kill -TERM $PID
+}
+
+# Stop any running ICC fairly violently.
+#
+do_stopdead() {
+    get_pid
+
+    if test ! "$PID"; then
+        return
+    fi
+
+    echo "Stopping $PRODUCT gently."
+    kill -TERM $PID
+    sleep 2
+
+    echo "Stopping $PRODUCT meanly."
+    kill -KILL $PID
+}
+
+# Query a running ICC for simple status.
+#
+do_status() {
+    get_pid 1
+    # Query it for essential liveness
+}
+
+while true; do
+    sleepTime=1
+    case $1 in
+        [0-9]*)
+	    sleepTime=$1
+	    echo "Sleeping ${sleepTime}s"
+	    ;;
+	start)
+            do_start
+            ;;
+	stop)
+            do_stop
+            ;;
+	stopdead)
+            do_stopdead
+            ;;
+	status)
+            do_status
+            ;;
+	restart)
+            do_stop
+            sleep 2
+            do_start
+            ;;
+	*)
+            usage
+            ;;
+    esac
+
+    shift
+    if [ -z $1 ]; then
+	break
+    fi
+
+    sleep $sleepTime
+done
+
+exit 0
