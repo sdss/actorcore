@@ -6,7 +6,7 @@
 # @Author: Brian Cherinka
 # @Date:   2017-05-30 16:07:27
 # @Last modified by:   Brian Cherinka
-# @Last Modified time: 2017-05-31 12:37:14
+# @Last Modified time: 2017-05-31 17:47:20
 
 from __future__ import print_function, division, absolute_import
 from argparse import ArgumentParser
@@ -15,6 +15,7 @@ import os
 import psutil
 import datetime
 import socket
+import sys
 
 
 class StageManager(object):
@@ -45,24 +46,25 @@ class StageManager(object):
     def parse_args(self):
         ''' Parse the arguments for stageManager '''
         parser = ArgumentParser(prog='stageManager', usage='%(prog)s [options]')
-        subparsers = parser.add_subparsers()
-
-        parent = ArgumentParser(add_help=False)
-        parent.add_argument('actor', type=str, help='name of the actor to manage', default=None)
-        parser_start = subparsers.add_parser('start', parents=[parent], help='start an actor')
-        parser_stop = subparsers.add_parser('stop', parents=[parent], help='stop an actor')
-        parser_kill = subparsers.add_parser('kill', parents=[parent], help='kill an actor')
-        parser_status = subparsers.add_parser('status', parents=[parent], help='get the status of an actor')
-        parser_start.set_defaults(func=self.start_actor)
-        parser_stop.set_defaults(func=self.stop_actor)
-        parser_kill.set_defaults(func=self.kill_actor)
-        parser_status.set_defaults(func=self.get_status)
-
+        parser.add_argument('actor', type=str, help='name of the actor to manage', default=None)
+        parser.add_argument('command', type=str, help='name of the command to run',
+                            choices=['start', 'stop', 'kill', 'status'], default=None)
         parser.add_argument('-l', '--logdir', type=str, dest='logdir', help='path to write log files', default=os.path.join(os.path.expanduser('~'), 'logs'))
         parser.add_argument('-u', '--overrideuser', dest='overuser', help='override to the current user', action='store_true', default=False)
         parser.add_argument('-o', '--overridehost', dest='overhost', help='override to the current host', action='store_true', default=False)
 
         self.args = parser.parse_args()
+
+        # set the function
+        if self.args.command == 'start':
+            self.args.__setattr__('func', self.start_actor)
+        elif self.args.command == 'status':
+            self.args.__setattr__('func', self.get_status)
+        elif self.args.command == 'stop':
+            self.args.__setattr__('func', self.stop_actor)
+        elif self.args.command == 'kill':
+            self.args.__setattr__('func', self.kill_actor)
+
         # set the actor
         assert self.args.actor is not None, 'an actor must be specified'
         for arg, val in self.args.__dict__.items():
@@ -190,19 +192,61 @@ class StageManager(object):
         product_path = os.environ.get(product_dir, None)
         return product_path
 
-    def setup_actor(self):
-        ''' Attempt to setup the actor with modules '''
+    def _set_actor_path(self, actorpath):
+        ''' Sets the actor product and python paths '''
+        product_dir = '{0}_DIR'.format(self.actor.upper())
+        os.environ[product_dir] = actorpath
+        pypath = os.path.join(actorpath, 'python')
+        if os.path.isdir(pypath):
+            sys.path.append(pypath)
+        else:
+            raise RuntimeError('Python path for {0} not found'.format(self.actor))
 
-        product_path = self._get_actor_path()
-        module_cmd = 'module -v load {0}'.format(self.actor)
+    def _run_command(self, setup_cmd):
+        ''' Run the subprocess Popen command '''
 
-        # run the module process
-        p = subprocess.Popen(module_cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        cmdtype = 'modules' if 'modules' in setup_cmd else 'eups'
+        cmd = '{0}; echo ${1}_DIR'.format(setup_cmd, self.actor.upper())
+        p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE,
+                             stderr=subprocess.STDOUT, executable='/bin/bash')
         (out, err) = p.communicate()
 
         # check it
-        if 'ERROR' in out:
-            raise RuntimeError('Could not setup product {0}.  Please setup manually.'.format(self.actor))
+        if ('ERROR' in out or 'command not found' in out):
+            raise RuntimeError('Could not setup product {0} with {1}.  Please setup manually.'.format(self.actor, cmdtype))
+        else:
+            out = out.strip('\n')
+            return out
+
+    def _try_modules(self):
+        ''' Try setup with modules '''
+        product_path = self._get_actor_path()
+        module_cmd = 'module load {0}'.format(self.actor)
+
+        # run the module process
+        actor_path = self._run_command(module_cmd)
+        return actor_path
+
+    def _try_eups(self):
+        ''' Try setup with eups '''
+        product_path = self._get_actor_path()
+        eups_cmd = 'setup {0}'.format(self.actor)
+
+        # run the eups process
+        actor_path = self._run_command(eups_cmd)
+        return actor_path
+
+    def setup_actor(self):
+        ''' Attempt to setup the actor with modules '''
+
+        try:
+            actor_path = self._try_modules()
+        except RuntimeError as e:
+            print('Module setup failed.  Trying eups')
+            actor_path = self._try_eups()
+        else:
+            # reload the package
+            self._set_actor_path(actor_path)
 
     def _read_the_config(self):
         ''' Read the stage manager config file '''
