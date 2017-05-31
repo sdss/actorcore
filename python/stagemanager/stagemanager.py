@@ -6,7 +6,7 @@
 # @Author: Brian Cherinka
 # @Date:   2017-05-30 16:07:27
 # @Last modified by:   Brian Cherinka
-# @Last Modified time: 2017-05-31 10:23:53
+# @Last Modified time: 2017-05-31 12:37:14
 
 from __future__ import print_function, division, absolute_import
 from argparse import ArgumentParser
@@ -119,6 +119,7 @@ class StageManager(object):
                 self.process.kill()
             else:
                 self.process.terminate()
+            self.process = None
 
     def kill_actor(self):
         ''' Kill the actor '''
