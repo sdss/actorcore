@@ -6,7 +6,7 @@
 # @Author: Brian Cherinka
 # @Date:   2017-05-30 16:07:27
 # @Last modified by:   Brian Cherinka
-# @Last Modified time: 2017-06-01 00:31:52
+# @Last Modified time: 2017-06-01 11:43:13
 
 from __future__ import print_function, division, absolute_import
 from argparse import ArgumentParser
@@ -305,13 +305,13 @@ class StageManager(object):
                 print('Overriding hostname with {0}'.format(currenthost))
                 os.environ['HOSTNAME'] = currenthost
             elif not self.overhost:
-                assert currenthost == host, 'Current Host must be {0}'.format(host)
+                assert host in currenthost, 'Current Host must be {0}'.format(host)
             else:
                 print('Cannot override host.  Could not find current hostname!')
 
             if self.overuser:
                 print('Overriding user with {0}'.format(currentuser))
-                os.environ['HOSTNAME'] = currentuser
+                os.environ['USER'] = currentuser
             elif not self.overuser:
                 assert currentuser == user, 'Current User must be {0}'.format(user)
             else:
