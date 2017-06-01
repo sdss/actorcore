@@ -6,7 +6,7 @@
 # @Author: Brian Cherinka
 # @Date:   2017-05-30 16:07:27
 # @Last modified by:   Brian Cherinka
-# @Last Modified time: 2017-05-31 23:47:56
+# @Last Modified time: 2017-05-31 23:56:35
 
 from __future__ import print_function, division, absolute_import
 from argparse import ArgumentParser
@@ -161,17 +161,6 @@ class StageManager(object):
         # set up product path
         if self.actor:
             self.product_path = self._get_actor_path()
-            # if not self.product_path:
-            #     print('Product {0} is not setup. Finding correct way..'.format(self.actor))
-            #     self.setup_actor()
-
-            # # try again
-            # product_path = self._get_actor_path()
-            # if product_path:
-            #     self.is_product_setup = True
-            #     self.product_logs_dir = os.path.join(self.logdir, self.actor)
-            #     if not os.path.isdir(self.product_logs_dir):
-            #         os.makedirs(self.product_logs_dir)
 
             # set up logpath
             self.product_logs_dir = os.path.join(self.logdir, self.actor)
@@ -191,11 +180,6 @@ class StageManager(object):
         self.uses = uses
         useeups = self.uses == 'eups'
         self.setupcmd = self._setup_cmd(eups=useeups)
-        # pypath = os.path.join(actorpath, 'python')
-        # if os.path.isdir(pypath):
-        #     sys.path.append(pypath)
-        # else:
-        #     raise RuntimeError('Python path for {0} not found'.format(self.actor))
 
     def _run_command(self, setup_cmd):
         ''' Run the subprocess Popen command '''
