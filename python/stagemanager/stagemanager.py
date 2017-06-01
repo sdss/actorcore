@@ -6,7 +6,7 @@
 # @Author: Brian Cherinka
 # @Date:   2017-05-30 16:07:27
 # @Last modified by:   Brian Cherinka
-# @Last Modified time: 2017-05-31 17:59:03
+# @Last Modified time: 2017-05-31 23:47:56
 
 from __future__ import print_function, division, absolute_import
 from argparse import ArgumentParser
@@ -27,6 +27,7 @@ class StageManager(object):
         self.logdir = logdir if logdir else os.path.join(os.path.expanduser('~'), 'logs')
         self.overuser = overuser
         self.overhost = overhost
+        self.setupcmd = None
 
         # parse any command-line arguments
         if console:
@@ -75,8 +76,14 @@ class StageManager(object):
         pid = self.get_pid()
         if not pid:
             print('Starting new {0} ...'.format(self.actor))
-            # check the paths
+            # check the path
             product_path = self._get_actor_path()
+            if not product_path:
+                # need to set things up
+                print('Product {0} is not setup. Trying..'.format(self.actor))
+                self.setup_actor()
+                product_path = self._get_actor_path()
+
             actorbin = os.path.join(product_path, 'bin', '{0}_main.py'.format(self.actor))
             oldactor = os.path.join(product_path, 'python/{0}'.format(self.actor), '{0}_main.py'.format(self.actor))
             # use the new actor_main in bin if it exists
@@ -93,10 +100,10 @@ class StageManager(object):
 
             # start the actor
             actorcmd = 'python {0} > {1} 2>&1 &'.format(actorpath, logdir)
-            p = subprocess.Popen(actorcmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            maincmd = actorcmd if not self.setupcmd else '{0}; {1}'.format(self.setupcmd, actorcmd)
+            p = subprocess.Popen(maincmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, executable='/bin/bash')
             (out, err) = p.communicate()
-            print(actorcmd)
-            print(out, err)
+
             # check error
             if 'error' in out.lower():
                 raise RuntimeError('Failed to start the actor {0}!'.format(self.actor))
@@ -137,27 +144,6 @@ class StageManager(object):
             pid = None
         return pid
 
-    def get_processes(self):
-        ''' Gets a list of all actor processess running '''
-        actors = self._parse_config()
-        procs = []
-        for proc in psutil.process_iter():
-            pdict = proc.as_dict(attrs=['pid', 'name'])
-            name = pdict.get('name', None)
-            if name and 'python' in name.lower():
-                proccmd = proc.cmdline()[1]
-                if any([a for a in actors if a in proccmd]):
-                    procs.append(proc)
-        return procs
-
-    def list_processes(self):
-        ''' List all the running processes '''
-        procs = self.get_processes()
-        for p in procs:
-            cmd = p.cmdline()[1]
-            name = cmd.rsplit('/', 1)[-1].split('_')[0]
-            print(name, p.pid)
-
     def get_process(self):
         ''' Gets the process for the given actor '''
         for proc in psutil.process_iter():
@@ -174,18 +160,23 @@ class StageManager(object):
 
         # set up product path
         if self.actor:
-            product_path = self._get_actor_path()
-            if not product_path:
-                print('Product {0} is not setup. Trying..'.format(self.actor))
-                self.setup_actor()
+            self.product_path = self._get_actor_path()
+            # if not self.product_path:
+            #     print('Product {0} is not setup. Finding correct way..'.format(self.actor))
+            #     self.setup_actor()
 
-            # try again
-            product_path = self._get_actor_path()
-            if product_path:
-                self.is_product_setup = True
-                self.product_logs_dir = os.path.join(self.logdir, self.actor)
-                if not os.path.isdir(self.product_logs_dir):
-                    os.makedirs(self.product_logs_dir)
+            # # try again
+            # product_path = self._get_actor_path()
+            # if product_path:
+            #     self.is_product_setup = True
+            #     self.product_logs_dir = os.path.join(self.logdir, self.actor)
+            #     if not os.path.isdir(self.product_logs_dir):
+            #         os.makedirs(self.product_logs_dir)
+
+            # set up logpath
+            self.product_logs_dir = os.path.join(self.logdir, self.actor)
+            if not os.path.isdir(self.product_logs_dir):
+                os.makedirs(self.product_logs_dir)
 
     def _get_actor_path(self):
         ''' Returns the actor product path '''
@@ -193,15 +184,18 @@ class StageManager(object):
         product_path = os.environ.get(product_dir, None)
         return product_path
 
-    def _set_actor_path(self, actorpath):
+    def _set_actor_path(self, actorpath, uses=None):
         ''' Sets the actor product and python paths '''
         product_dir = '{0}_DIR'.format(self.actor.upper())
         os.environ[product_dir] = actorpath
-        pypath = os.path.join(actorpath, 'python')
-        if os.path.isdir(pypath):
-            sys.path.append(pypath)
-        else:
-            raise RuntimeError('Python path for {0} not found'.format(self.actor))
+        self.uses = uses
+        useeups = self.uses == 'eups'
+        self.setupcmd = self._setup_cmd(eups=useeups)
+        # pypath = os.path.join(actorpath, 'python')
+        # if os.path.isdir(pypath):
+        #     sys.path.append(pypath)
+        # else:
+        #     raise RuntimeError('Python path for {0} not found'.format(self.actor))
 
     def _run_command(self, setup_cmd):
         ''' Run the subprocess Popen command '''
@@ -222,7 +216,7 @@ class StageManager(object):
     def _try_modules(self):
         ''' Try setup with modules '''
         product_path = self._get_actor_path()
-        module_cmd = 'module load {0}'.format(self.actor)
+        module_cmd = self._setup_cmd()
 
         # run the module process
         actor_path = self._run_command(module_cmd)
@@ -231,11 +225,18 @@ class StageManager(object):
     def _try_eups(self):
         ''' Try setup with eups '''
         product_path = self._get_actor_path()
-        eups_cmd = 'setup {0}'.format(self.actor)
+        eups_cmd = self._setup_cmd(eups=True)
 
         # run the eups process
         actor_path = self._run_command(eups_cmd)
         return actor_path
+
+    def _setup_cmd(self, eups=None):
+        ''' Make the setup command '''
+        if eups:
+            return 'setup {0}'.format(self.actor)
+        else:
+            return 'module load {0}'.format(self.actor)
 
     def setup_actor(self):
         ''' Attempt to setup the actor with modules '''
@@ -244,10 +245,14 @@ class StageManager(object):
             actor_path = self._try_modules()
         except RuntimeError as e:
             print('Module setup failed.  Trying eups')
-            actor_path = self._try_eups()
+            try:
+                actor_path = self._try_eups()
+            except RuntimeError as e:
+                raise RuntimeError('Eups setup failed. {0}'.format(e))
+            else:
+                self._set_actor_path(actor_path, uses='eups')
         else:
-            # reload the package
-            self._set_actor_path(actor_path)
+            self._set_actor_path(actor_path, uses='modules')
 
     def _read_the_config(self):
         ''' Read the stage manager config file '''
@@ -262,6 +267,27 @@ class StageManager(object):
         data = self._read_the_config()
         actors = [line.split('=')[0].strip() for line in data if line and '#' not in line]
         return actors
+
+    def get_processes(self):
+        ''' Gets a list of all actor processess running '''
+        actors = self._parse_config()
+        procs = []
+        for proc in psutil.process_iter():
+            pdict = proc.as_dict(attrs=['pid', 'name'])
+            name = pdict.get('name', None)
+            if name and 'python' in name.lower():
+                proccmd = proc.cmdline()[1]
+                if any([a for a in actors if a in proccmd]):
+                    procs.append(proc)
+        return procs
+
+    def list_processes(self):
+        ''' List all the running processes '''
+        procs = self.get_processes()
+        for p in procs:
+            cmd = p.cmdline()[1]
+            name = cmd.rsplit('/', 1)[-1].split('_')[0]
+            print(name, p.pid)
 
     def check_user_host(self):
         ''' Check the username and hosts '''
