@@ -6,7 +6,7 @@
 # @Author: Brian Cherinka
 # @Date:   2017-05-31 10:27:23
 # @Last modified by:   Brian Cherinka
-# @Last Modified time: 2017-05-31 23:55:10
+# @Last Modified time: 2017-06-01 00:36:24
 
 from __future__ import print_function, division, absolute_import
 from stagemanager.stagemanager import StageManager
@@ -50,6 +50,15 @@ class TestStageManager(object):
         assert 'Killing product {0}'.format(start_sm.actor) in out
         pid = start_sm.get_pid()
         assert pid is None
+
+    def test_restart(self, start_sm, capsys):
+        oldpid = start_sm.get_pid()
+        start_sm.restart_actor()
+        newpid = start_sm.get_pid()
+        out, err = capsys.readouterr()
+        assert oldpid != newpid
+        assert 'Stopping product {0}'.format(start_sm.actor) in out
+        assert 'Starting new {0}'.format(start_sm.actor) in out
 
     def test_getprocesses(self, start_sm):
         procs = start_sm.get_processes()

@@ -6,7 +6,7 @@
 # @Author: Brian Cherinka
 # @Date:   2017-05-30 16:07:27
 # @Last modified by:   Brian Cherinka
-# @Last Modified time: 2017-05-31 23:56:35
+# @Last Modified time: 2017-06-01 00:31:52
 
 from __future__ import print_function, division, absolute_import
 from argparse import ArgumentParser
@@ -15,7 +15,7 @@ import os
 import psutil
 import datetime
 import socket
-import sys
+import time
 
 
 class StageManager(object):
@@ -49,7 +49,7 @@ class StageManager(object):
         parser = ArgumentParser(prog='stageManager', usage='%(prog)s [options]', description='stages an actor for use')
         parser.add_argument('actor', type=str, help='name of the actor to manage', default=None)
         parser.add_argument('command', type=str, help='name of the command to run',
-                            choices=['start', 'stop', 'kill', 'status'], default=None)
+                            choices=['start', 'stop', 'kill', 'status', 'restart'], default=None)
         parser.add_argument('-l', '--logdir', type=str, dest='logdir', help='path to write log files', default=os.path.join(os.path.expanduser('~'), 'logs'))
         parser.add_argument('-u', '--overrideuser', dest='overuser', help='override to the current user', action='store_true', default=False)
         parser.add_argument('-o', '--overridehost', dest='overhost', help='override to the current host', action='store_true', default=False)
@@ -65,6 +65,8 @@ class StageManager(object):
             self.args.__setattr__('func', self.stop_actor)
         elif self.args.command == 'kill':
             self.args.__setattr__('func', self.kill_actor)
+        elif self.args.command == 'restart':
+            self.args.__setattr__('func', self.restart_actor)
 
         # set the actor
         assert self.args.actor is not None, 'an actor must be specified'
@@ -134,6 +136,14 @@ class StageManager(object):
     def kill_actor(self):
         ''' Kill the actor '''
         self.stop_actor(kill=True)
+
+    def restart_actor(self):
+        ''' Restarts an actor '''
+        self.stop_actor()
+        time.sleep(5)
+        pid = self.get_pid()
+        if pid is None:
+            self.start_actor()
 
     def get_pid(self):
         ''' Get the pid of a given actor '''
