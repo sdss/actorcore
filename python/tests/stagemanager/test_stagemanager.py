@@ -6,9 +6,10 @@
 # @Author: Brian Cherinka
 # @Date:   2017-05-31 10:27:23
 # @Last modified by:   Brian Cherinka
-# @Last Modified time: 2017-05-31 12:39:24
+# @Last Modified time: 2017-05-31 19:14:06
 
 from __future__ import print_function, division, absolute_import
+from stagemanager.stagemanager import StageManager
 import pytest
 
 
@@ -59,4 +60,23 @@ class TestStageManager(object):
         out, err = capsys.readouterr()
         assert start_sm.actor in out
 
+
+class TestStageSetupEnv(object):
+
+    @pytest.mark.parametrize('name', [('modules'), ('eups')])
+    def test_no_setups(self, sm, unload, name):
+        prodpath = sm._get_actor_path()
+        assert prodpath is None
+        with pytest.raises(RuntimeError) as cm:
+            sm.__getattribute__('_try_{0}'.format(name))()
+        out, err = capsys.readouterr()
+
+    @pytest.mark.parametrize('host, user, errmsg',
+                             [(None, None, 'Current Host must be sdss4-hub'),
+                              (True, None, 'Current User must be sdss4')],
+                             ids=['wronghost', 'wronguser'])
+    def test_wrongsystem(self, actor, host, user, errmsg):
+        with pytest.raises(AssertionError) as cm:
+            sm = StageManager(actor=actor, overhost=host, overuser=user)
+        assert errmsg in str(cm.value)
 

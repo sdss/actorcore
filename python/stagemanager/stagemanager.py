@@ -6,7 +6,7 @@
 # @Author: Brian Cherinka
 # @Date:   2017-05-30 16:07:27
 # @Last modified by:   Brian Cherinka
-# @Last Modified time: 2017-05-31 17:47:20
+# @Last Modified time: 2017-05-31 17:59:03
 
 from __future__ import print_function, division, absolute_import
 from argparse import ArgumentParser
@@ -45,7 +45,7 @@ class StageManager(object):
 
     def parse_args(self):
         ''' Parse the arguments for stageManager '''
-        parser = ArgumentParser(prog='stageManager', usage='%(prog)s [options]')
+        parser = ArgumentParser(prog='stageManager', usage='%(prog)s [options]', description='stages an actor for use')
         parser.add_argument('actor', type=str, help='name of the actor to manage', default=None)
         parser.add_argument('command', type=str, help='name of the command to run',
                             choices=['start', 'stop', 'kill', 'status'], default=None)
