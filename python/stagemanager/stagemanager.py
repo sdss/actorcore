@@ -95,7 +95,8 @@ class StageManager(object):
             actorcmd = 'python {0} > {1} 2>&1 &'.format(actorpath, logdir)
             p = subprocess.Popen(actorcmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
             (out, err) = p.communicate()
-
+            print(actorcmd)
+            print(out, err)
             # check error
             if 'error' in out.lower():
                 raise RuntimeError('Failed to start the actor {0}!'.format(self.actor))
@@ -143,7 +144,7 @@ class StageManager(object):
         for proc in psutil.process_iter():
             pdict = proc.as_dict(attrs=['pid', 'name'])
             name = pdict.get('name', None)
-            if name and 'python' in name:
+            if name and 'python' in name.lower():
                 proccmd = proc.cmdline()[1]
                 if any([a for a in actors if a in proccmd]):
                     procs.append(proc)
@@ -162,7 +163,7 @@ class StageManager(object):
         for proc in psutil.process_iter():
             pdict = proc.as_dict(attrs=['pid', 'name'])
             name = pdict.get('name', None)
-            if name and 'python' in name:
+            if name and 'python' in name.lower():
                 proccmd = proc.cmdline()
                 if self.actor in proccmd[1]:
                     self.process = proc
@@ -295,4 +296,3 @@ class StageManager(object):
                 assert currentuser == user, 'Current User must be {0}'.format(user)
             else:
                 print('Cannot override user.  Could not find current user')
-
