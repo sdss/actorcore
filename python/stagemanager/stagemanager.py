@@ -6,7 +6,7 @@
 # @Author: Brian Cherinka
 # @Date:   2017-05-30 16:07:27
 # @Last modified by:   Brian Cherinka
-# @Last Modified time: 2017-06-01 11:43:13
+# @Last Modified time: 2017-06-01 12:00:21
 
 from __future__ import print_function, division, absolute_import
 from argparse import ArgumentParser
@@ -202,7 +202,7 @@ class StageManager(object):
 
         # check it
         if ('ERROR' in out or 'command not found' in out):
-            raise RuntimeError('Could not setup product {0} with {1}.  Please setup manually.'.format(self.actor, cmdtype))
+            raise RuntimeError('Could not setup product {0} with {1}.  Please setup manually.:\n{2}'.format(self.actor, cmdtype, out))
         else:
             out = out.strip('\n')
             return out
@@ -238,13 +238,17 @@ class StageManager(object):
         try:
             actor_path = self._try_modules()
         except RuntimeError as e:
-            print('Module setup failed.  Trying eups')
-            try:
-                actor_path = self._try_eups()
-            except RuntimeError as e:
-                raise RuntimeError('Eups setup failed. {0}'.format(e))
+            eupspath = os.environ.get('EUPS_PATH', None)
+            if eupspath:
+                print('Module setup failed.  Trying eups')
+                try:
+                    actor_path = self._try_eups()
+                except RuntimeError as e:
+                    raise RuntimeError('Eups setup failed. {0}'.format(e))
+                else:
+                    self._set_actor_path(actor_path, uses='eups')
             else:
-                self._set_actor_path(actor_path, uses='eups')
+                raise RuntimeError('Module setup failed: {0}'.format(e))
         else:
             self._set_actor_path(actor_path, uses='modules')
 
