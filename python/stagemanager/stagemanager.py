@@ -6,7 +6,7 @@
 # @Author: Brian Cherinka
 # @Date:   2017-05-30 16:07:27
 # @Last modified by:   Brian Cherinka
-# @Last Modified time: 2017-06-01 12:00:21
+# @Last Modified time: 2017-06-01 12:11:37
 
 from __future__ import print_function, division, absolute_import
 from argparse import ArgumentParser
@@ -194,7 +194,7 @@ class StageManager(object):
     def _run_command(self, setup_cmd):
         ''' Run the subprocess Popen command '''
 
-        cmdtype = 'modules' if 'modules' in setup_cmd else 'eups'
+        cmdtype = 'modules' if 'module' in setup_cmd else 'eups'
         cmd = '{0}; echo ${1}_DIR'.format(setup_cmd, self.actor.upper())
         p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE,
                              stderr=subprocess.STDOUT, executable='/bin/bash')
