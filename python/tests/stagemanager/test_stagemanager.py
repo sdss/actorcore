@@ -6,7 +6,7 @@
 # @Author: Brian Cherinka
 # @Date:   2017-05-31 10:27:23
 # @Last modified by:   Brian Cherinka
-# @Last Modified time: 2017-05-31 19:14:06
+# @Last Modified time: 2017-05-31 23:55:10
 
 from __future__ import print_function, division, absolute_import
 from stagemanager.stagemanager import StageManager
@@ -69,7 +69,6 @@ class TestStageSetupEnv(object):
         assert prodpath is None
         with pytest.raises(RuntimeError) as cm:
             sm.__getattribute__('_try_{0}'.format(name))()
-        out, err = capsys.readouterr()
 
     @pytest.mark.parametrize('host, user, errmsg',
                              [(None, None, 'Current Host must be sdss4-hub'),
