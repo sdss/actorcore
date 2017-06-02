@@ -418,6 +418,10 @@ class Actor(object):
                 cmd.fail('text=%s' % (qstr("Unrecognized command: %s" % (cmdStr))))
                 return
 
+            if validatedCmd.extra_keywords:
+                keyword_names = [key.name for key in validatedCmd.extra_keywords]
+                cmd.warn('text="Extra keywords found: {0}"'.format(', '.join(keyword_names)))
+
             self.cmdLog.info('< %s:%d %s' % (cmd.cmdr, cmd.mid, validatedCmd))
             if len(cmdFuncs) > 1:
                 cmd.warn('text=%s' % (qstr("command has more than one callback (%s): %s" %
