@@ -276,6 +276,7 @@ class Cmd(object):
         self.finished = False
         self.nFinished = 0
         self.didFail = False
+        self.command = None # this is the command text
         self.cParser = parser.CommandParser()
         self.clear_msgs()
         self.cmdr = None # to make an Actor happy
@@ -288,6 +289,10 @@ class Cmd(object):
 
         # to keep track of whether BOSS hasn't been readout.
         self.bossNeedsReadout = False
+
+        # To run fxn on command
+        self.runOn = None
+        self.runOnCount = 1
 
     def __repr__(self):
         return 'TestHelperCmdr-%s'%('finished' if self.finished else 'alive')
@@ -424,7 +429,12 @@ class Cmd(object):
             text = baseText
         self._msg(text,'c')
         command = text.split('<<')[0].strip()
+        self.command = command
         self.calls.append(command)
+
+        # run on
+        if self.runOn:
+            self.inject_command(command)
 
         if self.check_fail(command):
             didFail = True
@@ -439,6 +449,17 @@ class Cmd(object):
                 didFail = succeed_func(**kwargs)
 
         return _finish(didFail,kwargs)
+
+    def inject_command(self, command):
+        ''' Try to inject a function into at a given command '''
+        cmd, fxn = self.runOn
+        if cmd == command:
+            if self.runOnCount == 1:
+                # run the function and set the counter to 0
+                fxn()
+                self.runOnCount = 0
+            elif self.runOnCount != 0:
+                self.runOnCount -= 1
 
     def apogee_succeed(self,**kwargs):
         """Handle apogee commands as successes, and update appropriate keywords."""
