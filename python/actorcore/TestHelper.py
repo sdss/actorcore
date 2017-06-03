@@ -134,8 +134,14 @@ bossLoaded = {'cartridgeLoaded':[11,1000,'A',54321,1], 'survey':['BOSS','None'],
 apogeeLoaded = {'cartridgeLoaded':[1,2000,'A',54321,2], 'survey':['APOGEE','None'], 'loadedNewCartridge':[]}
 mangaDitherLoaded = {'cartridgeLoaded':[2,3000,'A',54321,3], 'survey':['MaNGA','MaNGA Dither'], 'loadedNewCartridge':[]}
 mangaStareLoaded = {'cartridgeLoaded':[2,3001,'A',54321,3], 'survey':['MaNGA','MaNGA Stare'], 'loadedNewCartridge':[]}
+mangaMaStarLoaded = {'cartridgeLoaded': [2, 3001, 'A', 54321, 3],
+                     'survey': ['MaNGA', 'MaNGA MaStar'],
+                     'loadedNewCartridge': []}
 apogeemangaDitherLoaded = {'cartridgeLoaded':[3,4000,'A',54321,4], 'survey':['APOGEE-2&MaNGA','MaNGA Dither'], 'loadedNewCartridge':[]}
 apogeemangaStareLoaded = {'cartridgeLoaded':[3,4000,'A',54321,4], 'survey':['APOGEE-2&MaNGA','MaNGA Stare'], 'loadedNewCartridge':[]}
+apogeemangaMaStarLoaded = {'cartridgeLoaded': [3, 4000, 'A', 54321, 4],
+                           'survey': ['APOGEE-2&MaNGA', 'MaNGA MaStar'],
+                           'loadedNewCartridge': []}
 apogeeLeadLoaded = {'cartridgeLoaded':[3,4000,'A',54321,4], 'survey':['APOGEE-2&MaNGA','APOGEE Lead'], 'loadedNewCartridge':[]}
 apogeemangaLoadedNoSurveyMode = {'cartridgeLoaded': [3, 4000, 'A', 54321, 4],
                                  'survey': ['APOGEE-2&MaNGA', 'None'],
@@ -162,12 +168,14 @@ guiderState['cartLoaded'] = merge_dicts(guiderOff,bossLoaded,mangaC)
 guiderState['bossLoaded'] = merge_dicts(guiderOff,bossLoaded,mangaC)
 guiderState['apogeeLoaded'] = merge_dicts(guiderOff,apogeeLoaded,mangaC)
 guiderState['mangaStareLoaded'] = merge_dicts(guiderOff,mangaDitherLoaded,mangaC)
+guiderState['mangaMaStarLoaded'] = merge_dicts(guiderOff, mangaMaStarLoaded, mangaC)
 guiderState['mangaDitherLoaded'] = merge_dicts(guiderOff,mangaStareLoaded,mangaC)
 guiderState['apogeemangaDitherLoaded'] = merge_dicts(guiderOff,apogeemangaDitherLoaded,mangaC)
 guiderState['apogeemangaNoneLoaded'] = merge_dicts(guiderOff,
                                                    apogeemangaLoadedNoSurveyMode,
                                                    mangaC)
 guiderState['apogeemangaStareLoaded'] = merge_dicts(guiderOff,apogeemangaStareLoaded,mangaC)
+guiderState['apogeemangaMaStarLoaded'] = merge_dicts(guiderOff, apogeemangaMaStarLoaded, mangaC)
 guiderState['apogeeLeadLoaded'] = merge_dicts(guiderOff,apogeeLeadLoaded,mangaC)
 guiderState['guiderOn'] = merge_dicts(guiderOn,bossLoaded,mangaC)
 guiderState['guiderOnDecenter'] = merge_dicts(guiderOn,mangaDitherLoaded,mangaN)
@@ -178,10 +186,14 @@ bossPointing = {'pointingInfo':[1000,11,'A',10.,20.,1.,0.,5500,'BOSS','BOSS']}
 apogeePointing = {'pointingInfo':[2000,1,'A',20.,30.,2.,1.,10500,'APOGEE-2','APOGEE']}
 mangaDitherPointing = {'pointingInfo':[3000,2,'A',30.,40.,3.,2.,5500,'MaNGA','MaNGA dither']}
 mangaStarePointing = {'pointingInfo':[3001,2,'A',30.,40.,3.,2.,5500,'MaNGA','MaNGA Stare']}
+mangaMaStarPointing = {'pointingInfo': [3001, 2, 'A', 30., 40., 3., 2., 5500,
+                                        'MaNGA', 'MaNGA MaStar']}
 apogeeLeadPointing = {'pointingInfo':[4000,3,'A',40.,50.,4.,3.,10500,'APOGEE2&MANGA','APOGEE lead']}
 apogeeLeadPointingCart7 = {'pointingInfo':[4000,7,'A',40.,50.,4.,3.,10500,'APOGEE2&MANGA','APOGEE lead']}
 apgoeemangaDitherPointing = {'pointingInfo':[5000,4,'A',50.,60.,5.,4.,5500,'APOGEE-2&MaNGA','MaNGA dither']}
 apogeemangaStarePointing = {'pointingInfo':[5001,4,'A',50.,60.,5.,4.,5500,'APOGEE-2&MaNGA','MaNGA Stare']}
+apogeemangaMaStarPointing = {'pointingInfo': [5001, 4, 'A', 50., 60., 5., 4., 5500,
+                                             'APOGEE-2&MaNGA', 'MaNGA MaStar']}
 apogeeDesignNone = {'apogeeDesign':['?',-1]}
 apogeeDesign1000 = {'apogeeDesign':['longplate',1000]}
 noInstrumentPlugged = {'pluggedInstruments':[]}
@@ -193,8 +205,12 @@ platedbState['boss'] = merge_dicts(bossPointing,apogeeDesignNone, BOSSInstrument
 platedbState['apogee'] = merge_dicts(apogeePointing,apogeeDesignNone, APOGEEInstrumentPlugged)
 platedbState['mangaDither'] = merge_dicts(mangaDitherPointing,apogeeDesignNone, BOSSInstrumentPlugged)
 platedbState['mangaStare'] = merge_dicts(mangaStarePointing,apogeeDesignNone, BOSSInstrumentPlugged)
+platedbState['mangaMaStar'] = merge_dicts(mangaMaStarPointing, apogeeDesignNone,
+                                          BOSSInstrumentPlugged)
 platedbState['apgoeemangaDither'] = merge_dicts(apgoeemangaDitherPointing,apogeeDesignNone, BothInstrumentsPlugged)
 platedbState['apgoeemangaStare'] = merge_dicts(apogeemangaStarePointing,apogeeDesignNone, BothInstrumentsPlugged)
+platedbState['apogeemangaMaStar'] = merge_dicts(apogeemangaMaStarPointing, apogeeDesignNone,
+                                                BothInstrumentsPlugged)
 platedbState['apogeeLead'] = merge_dicts(apogeeLeadPointing,apogeeDesignNone, BothInstrumentsPlugged)
 platedbState['apogeeLeadCart7'] = merge_dicts(apogeeLeadPointingCart7,apogeeDesignNone, BothInstrumentsPlugged)
 platedbState['apogeeLead1000s'] = merge_dicts(apogeeLeadPointing,apogeeDesign1000, BothInstrumentsPlugged)
