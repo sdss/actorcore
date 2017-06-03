@@ -145,6 +145,7 @@ class ActorState(object):
         self.models = models
         self.restartCmd = None
         self.aborting = False
+        self.ignoreAborting = False
         self.timeout = 10
 
     def __str__(self):

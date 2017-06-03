@@ -1027,7 +1027,7 @@ class FakeActor(Actor.SDSSActor):
         product_dir_name = '$%s_DIR' % (self.productName.upper())
         self.product_dir = os.path.expandvars(product_dir_name)
         self.configFile = configFile if configFile else \
-            os.path.expandvars(os.path.join(self.product_dir, 'etc', '%s.cfg' % (self.name)))
+            os.path.expandvars(os.path.join(self.product_dir, 'etc', '{0}_{1}.cfg'.format(self.name, self.location)))
 
         self.cmdLog = logging.getLogger('cmds')
         self.logger = logging.getLogger('logger')
