@@ -17,6 +17,7 @@ Added
 * LCO TCC cards and other header fixes in ``utility.fits``.
 * Refactored StageManager as a Python package and importable class object.
 * Fixed TestHelper to correctly point to location spefic config files.
+* Added runOn and runOnCount to TestHelper.  This allows insertion of functions to run on a given command.
 
 .. x.y.z (unreleased)
 .. ------------------
