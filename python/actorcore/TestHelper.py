@@ -282,6 +282,14 @@ weather = {'pressure':[2],
 apoState = {}
 apoState['default'] = merge_dicts(weather)
 
+
+hartmannState = {}
+hartmannState['default'] = {'sp1Residuals': [0, 0, 'OK'],
+                            'sp2Residuals': [0, 0, 'OK']}
+hartmannState['blue_fails'] = {'sp1Residuals': [0, 0, 'Move blue ring 2 degrees.'],
+                               'sp2Residuals': [0, 0, 'OK']}
+
+
 class Cmd(object):
     """
     Fake commander object, keeps the message level and message for
@@ -887,7 +895,8 @@ class ActorTester(object):
                   'ecamera':ecameraState['ok'],
                   'sop':sopState['ok'],
                   'boss':bossState['idle'],
-                  'apo':apoState['default']}
+                  'apo':apoState['default'],
+                  'hartmann': hartmannState['default']}
 
         if getattr(self,'actor',None) is None:
             if self.name in ('boss','gcamera'):
