@@ -626,9 +626,6 @@ class SDSSActor(Actor):
         """
         actorState = self.actorState
 
-        if queueClass is None:
-            queueClass = Queue.Queue
-
         if getattr(actorState,"threads",None) is None:
             restart = False # nothing to restart!
 
@@ -650,7 +647,14 @@ class SDSSActor(Actor):
         threadsToStart = []
         for tname, tid, thread in self.threadList:
 
-            newQueues[tid] = queueClass(0) if restartQueues else actorState.queues[tid]
+            if queueClass is None:
+                newQueues[tid] = Queue.Queue(0) if restartQueues else actorState.queues[tid]
+            else:
+                # If queueClass is custom, we assume it comes from SOP, whose queue require to
+                # pass the tname as the first argument.
+                # TODO: this is ugly and has already caused problems. We should find a better
+                # solution.
+                newQueues[tid] = queueClass(tname, 0) if restartQueues else actorState.queues[tid]
 
             if inspect.ismodule(thread):
                 threadTarget = thread.main
