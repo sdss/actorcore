@@ -231,10 +231,21 @@ def lcoTCCCards(models, cmd=None):
                                  idx=0, cnv=float,
                                  comment='User-specified scale factor',
                                  onFail='NaN'))
-
-    cards.append(makeCardFromKey(cmd, tccDict, 'threadringEncPos', 'TRPOS',
+    cards.append(makeCardFromKey(cmd, tccDict, 'mitutoyoRawPos', 'MIT1',
                                  idx=0, cnv=float,
-                                 comment='Average position of Mitutoyo scale ring gauges mm',
+                                 comment='Mitutoyo 1 thread ring height (mm)',
+                                 onFail='NaN'))
+    cards.append(makeCardFromKey(cmd, tccDict, 'mitutoyoRawPos', 'MIT2',
+                                 idx=1, cnv=float,
+                                 comment='Mitutoyo 2 thread ring height (mm)',
+                                 onFail='NaN'))
+    cards.append(makeCardFromKey(cmd, tccDict, 'mitutoyoRawPos', 'MIT3',
+                                 idx=2, cnv=float,
+                                 comment='Mitutoyo 3 thread ring height (mm)',
+                                 onFail='NaN'))
+    cards.append(makeCardFromKey(cmd, tccDict, 'threadRingMotorPos', 'TRPOS',
+                                 idx=0, cnv=float,
+                                 comment='Motor position of thread ring (mm)',
                                  onFail='NaN'))
     cards.append(makeCardFromKey(cmd, tccDict, 'scaleZeroPos', 'TRZERO',
                                  idx=0, cnv=float,
