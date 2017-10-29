@@ -101,12 +101,16 @@ class StageManager(object):
             # create logfile based on current time
             nowlog = datetime.datetime.now().utcnow().isoformat() + '.log'
             logdir = os.path.join(self.product_logs_dir, nowlog)
+            sym_link = os.path.join(self.product_logs_dir, 'current.log')
 
             # start the actor
             actorcmd = 'python {0} > {1} 2>&1 &'.format(actorpath, logdir)
             maincmd = actorcmd if not self.setupcmd else '{0}; {1}'.format(self.setupcmd, actorcmd)
             p = subprocess.Popen(maincmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, executable='/bin/bash')
             (out, err) = p.communicate()
+
+            # Creates the symbolic link to the just-created log
+            os.symlink(logdir, sym_link)
 
             # check error
             if 'error' in out.lower():
