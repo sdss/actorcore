@@ -110,6 +110,8 @@ class StageManager(object):
             (out, err) = p.communicate()
 
             # Creates the symbolic link to the just-created log
+            if os.path.exists(sym_link):
+                os.remove(sym_link)
             os.symlink(logdir, sym_link)
 
             # check error
