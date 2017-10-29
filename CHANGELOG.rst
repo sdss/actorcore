@@ -6,6 +6,18 @@ Change Log
 
 This document records the main changes to the actorcore code.
 
+
+.. _changelog-v4_1_1:
+v4_1_1 (unreleased)
+-------------------
+
+Fixed
+^^^^^
+
+* In SDSSActor.startThreads(), the queues were being started without the
+thread name for SOP, which caused much pain and confusion.
+
+
 .. _changelog-v4_1:
 v4_1 (2017-06-11)
 -----------------
