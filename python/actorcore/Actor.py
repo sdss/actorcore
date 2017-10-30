@@ -647,7 +647,7 @@ class SDSSActor(Actor):
         threadsToStart = []
         for tname, tid, thread in self.threadList:
 
-            if queueClass is None:
+            if queueClass is Queue.Queue:
                 newQueues[tid] = Queue.Queue(0) if restartQueues else actorState.queues[tid]
             else:
                 # If queueClass is custom, we assume it comes from SOP, whose queue require to
