@@ -604,7 +604,6 @@ class SDSSActor(Actor):
             self.logger.info("reactor dead, cleaning up...")
             self._shutdown()
 
-
     def startThreads(self, Msg, cmd=None, restart=False, restartQueues=False,
                      queueClass=None):
         """
