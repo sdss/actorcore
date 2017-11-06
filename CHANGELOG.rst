@@ -8,7 +8,7 @@ This document records the main changes to the actorcore code.
 
 
 .. _changelog-v4_1_1:
-v4_1_1 (unreleased)
+v4_1_1 (2017-11-06)
 -------------------
 
 Fixed
