@@ -302,7 +302,7 @@ class StageManager(object):
         data = self._read_the_config()
 
         # find the actor in the config and extract user and host
-        actor_cfg = [line for line in data if self.actor in line]
+        actor_cfg = [line for line in data if self.actor in line and not line.startswith('#')]
         if not actor_cfg:
             raise IndexError('No user/host config information found for {0}.  \
                 Consider adding it to etc/stageManager.cfg'.format(self.actor))
