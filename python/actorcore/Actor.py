@@ -272,6 +272,9 @@ class Actor(object):
         If you simply want to generate the keyword, call .sendVersionKey().
         """
 
+        if hasattr(self, 'version'):
+            return self.version
+
         try:
             headURL = self.headURL
             headURL = headURL.split(' ')[1]
