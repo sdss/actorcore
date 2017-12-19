@@ -154,7 +154,8 @@ class ActorState(object):
 
 
 class Actor(object):
-    def __init__(self, name, productName=None, configFile=None,
+
+    def __init__(self, name, productName=None, productDir=None, configFile=None,
                  makeCmdrConnection=True):
         """
         Create an Actor.
@@ -172,7 +173,9 @@ class Actor(object):
         # configuration file.
         self.name = name
         self.productName = productName if productName else self.name
-        product_dir_name = '$%s_DIR' % (self.productName.upper())
+
+        product_dir_name = '$%s_DIR' % (self.productName.upper()) \
+            if productDir is None else productDir
         self.product_dir = os.path.expandvars(product_dir_name)
 
         if not self.product_dir:
@@ -566,7 +569,6 @@ class SDSSActor(Actor):
             for f in dirlist:
                 if re.match('^[a-zA-Z][a-zA-Z0-9_-]*Cmd_{}\.py$'.format(self.location), f):
                     self.attachCmdSet(f[:-3], [path])
-
 
     def run(self, Msg=None, startThreads=True, doReactor=True, queueClass=None):
         """
