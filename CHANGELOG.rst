@@ -7,6 +7,18 @@ Change Log
 This document records the main changes to the actorcore code.
 
 
+.. _changelog-v4_1_3:
+v4_1_3 (2017-12-19)
+-------------------
+
+Added
+^^^^^
+
+* Added ``lcoGuiderActor`` to the ``stageManager`` list.
+* Added handling of actor version from the ``__version__`` attribute.
+* Added option to specify the product directory when initialising the actor.
+
+
 .. _changelog-v4_1_2:
 v4_1_2 (2017-12-17)
 -------------------
