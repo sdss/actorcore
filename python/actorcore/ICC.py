@@ -17,7 +17,8 @@ import sys
 import actorcore.Actor
 
 class ICC(actorcore.Actor.Actor):
-    def __init__(self, name, productName=None, configFile=None, makeCmdrConnection=True):
+    def __init__(self, name, productName=None, configFile=None, productDir=None,
+                 makeCmdrConnection=True):
         """
         Create an ICC to communicate with an instrument.
 
@@ -31,8 +32,11 @@ class ICC(actorcore.Actor.Actor):
             makeCmdrConnection (bool): establish self.cmdr as a command connection to the hub.
         """
 
-        actorcore.Actor.Actor.__init__(self, name, configFile=configFile, productName=productName, makeCmdrConnection=makeCmdrConnection)
-        
+        actorcore.Actor.Actor.__init__(self, name, configFile=configFile,
+                                       productName=productName,
+                                       productDir=productDir,
+                                       makeCmdrConnection=makeCmdrConnection)
+
         # Create a separate logger for controller io
         makeOpsFileLogger(os.path.join(self.logDir, "io"), 'io')
         self.iolog = logging.getLogger('io')
@@ -61,11 +65,11 @@ class ICC(actorcore.Actor.Actor):
             if file:
                 file.close()
 
-        # Instantiate and save a new controller. 
+        # Instantiate and save a new controller.
         self.logger.info('creating new %s (%08x)', name, id(mod))
         conn = getattr(mod,name)(self, name)
 
-        # If we loaded the module and the controller is already running, cleanly stop the old one. 
+        # If we loaded the module and the controller is already running, cleanly stop the old one.
         if name in self.controllers:
             self.logger.info('stopping %s controller', name)
             self.controllers[name].stop()
@@ -82,7 +86,7 @@ class ICC(actorcore.Actor.Actor):
         return True
 
     def attachAllControllers(self, path=None):
-        """ (Re-)load and (re-)connect to the hardware controllers listed in config:"icc".controllers. 
+        """ (Re-)load and (re-)connect to the hardware controllers listed in config:"icc".controllers.
         """
 
         clist = eval(self.config.get(self.name, 'controllers'))
@@ -101,7 +105,7 @@ class ICC(actorcore.Actor.Actor):
 
     def shutdown(self):
         actorcore.Actor.shutdown(self)
-        
+
         self.stopAllControllers()
 
 
