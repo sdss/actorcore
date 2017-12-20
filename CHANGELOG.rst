@@ -7,6 +7,16 @@ Change Log
 This document records the main changes to the actorcore code.
 
 
+.. _changelog-v4_1_6:
+v4_1_6 (2017-12-20)
+-------------------
+
+Added
+^^^^^
+
+* Added ``productDir`` to ``ICC``.
+
+
 .. _changelog-v4_1_5:
 v4_1_5 (2017-12-20)
 -------------------
