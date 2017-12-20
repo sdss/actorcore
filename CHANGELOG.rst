@@ -7,15 +7,24 @@ Change Log
 This document records the main changes to the actorcore code.
 
 
-.. _changelog-v4_1_4:
-v4_1_3 (2017-12-20)
+.. _changelog-v4_1_5:
+v4_1_5 (2017-12-20)
 -------------------
 
 Added
 ^^^^^
 
-* Added ``lcoSopActor`` and ``lcoGcameraICC`` to the ``stageManager`` list.
-* Updated modulefile.
+* Added ``lcoGcameraICC``.
+
+
+.. _changelog-v4_1_4:
+v4_1_4 (2017-12-20)
+-------------------
+
+Added
+^^^^^
+
+* Added ``lcoSopActor`` to the ``stageManager`` list.
 
 
 .. _changelog-v4_1_3:
