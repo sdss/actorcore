@@ -45,7 +45,7 @@ Added
 ^^^^^
 
 * Added ``lcoGuiderActor`` to the ``stageManager`` list.
-* Added handling of actor version from the ``__version__`` attribute.
+* Added handling of actor version from the ``Actor.version`` attribute.
 * Added option to specify the product directory when initialising the actor.
 
 
