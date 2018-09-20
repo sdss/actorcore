@@ -1,22 +1,25 @@
 """
 Help for writing test cases that need a Cmdr, Model, Actor, etc.
 """
-import sys
-import os
-import re
-import time
 import logging
+import os
 import Queue
+import re
 import StringIO
-
+import sys
 import threading
-call_lock = threading.RLock()
-
-from . import Actor
+import time
 
 import opscore.protocols.validation as validation
 from opscore.actor import keyvar
-from opscore.protocols import keys,parser,messages
+from opscore.protocols import keys, messages, parser
+
+from . import Actor
+
+
+call_lock = threading.RLock()
+
+
 
 # To allow fake-setting/handling of the various actor models.
 global globalModels
@@ -200,8 +203,10 @@ apgoeemanga10Pointing = {'pointingInfo':[5000,4,'A',50.,60.,5.,4.,5500,'APOGEE-2
 apogeemangaStarePointing = {'pointingInfo':[5001,4,'A',50.,60.,5.,4.,5500,'APOGEE-2&MaNGA','MaNGA Stare']}
 apogeemangaMaStarPointing = {'pointingInfo': [5001, 4, 'A', 50., 60., 5., 4., 5500,
                                              'APOGEE-2&MaNGA', 'MaStar']}
-apogeeDesignNone = {'apogeeDesign':['?',-1]}
-apogeeDesign1000 = {'apogeeDesign':['longplate',1000]}
+apogeeDesignNone = {'apogeeDesign':['?',-1], 'mangaExposureTime': [-1]}
+apogeeDesign1000 = {'apogeeDesign':['longplate',1000], 'mangaExposureTime': [-1]}
+apogeeDesignNone_manga_short = {'apogeeDesign':['?',-1], 'mangaExposureTime': [30]}
+apogeeDesign1000_manga_short = {'apogeeDesign':['longplate',1000], 'mangaExposureTime': [30]}
 noInstrumentPlugged = {'pluggedInstruments':[]}
 APOGEEInstrumentPlugged = {'pluggedInstruments':['APOGEE']}
 BOSSInstrumentPlugged = {'pluggedInstruments':['BOSS']}
@@ -221,7 +226,14 @@ platedbState['apogeemangaMaStar'] = merge_dicts(apogeemangaMaStarPointing, apoge
 platedbState['apogeeLead'] = merge_dicts(apogeeLeadPointing,apogeeDesignNone, BothInstrumentsPlugged)
 platedbState['apogeeLeadCart7'] = merge_dicts(apogeeLeadPointingCart7,apogeeDesignNone, BothInstrumentsPlugged)
 platedbState['apogeeLead1000s'] = merge_dicts(apogeeLeadPointing,apogeeDesign1000, BothInstrumentsPlugged)
+
 platedbState['apogeeLead1000sCart7'] = merge_dicts(apogeeLeadPointingCart7,apogeeDesign1000, BothInstrumentsPlugged)
+platedbState['apogeeLead_manga_short'] = merge_dicts(apogeeLeadPointing,
+                                                     apogeeDesignNone_manga_short,
+                                                     BothInstrumentsPlugged)
+platedbState['apogeeLead1000s_manga_short'] = merge_dicts(apogeeLeadPointing,
+                                                          apogeeDesign1000_manga_short,
+                                                          BothInstrumentsPlugged)
 platedbState['coObsNoAPOGEE'] = merge_dicts(BOSSInstrumentPlugged)
 platedbState['coObsNoMANGA'] = merge_dicts(APOGEEInstrumentPlugged)
 platedbState['coObsNone'] = merge_dicts(noInstrumentPlugged)
