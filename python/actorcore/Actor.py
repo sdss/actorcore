@@ -535,7 +535,7 @@ class SDSSActor(Actor):
     def _determine_location(location=None):
         """Set self.location based on the domain name."""
         if location is None:
-            fqdn = socket.getfqdn()
+            fqdn = socket.getfqdn().split('.')
         else:
             return location.upper()
 
