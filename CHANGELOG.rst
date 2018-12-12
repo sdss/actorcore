@@ -7,6 +7,16 @@ Change Log
 This document records the main changes to the actorcore code.
 
 
+.. _changelog-v4_1_8:
+
+v4_1_8 (unreleased)
+-------------------
+
+Added
+^^^^^
+* Some keys for MaStar testing in ``sopActor``.
+
+
 .. _changelog-v4_1_7:
 
 v4_1_7 (2018-09-23)
