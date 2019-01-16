@@ -205,8 +205,8 @@ apogeemangaMaStarPointing = {'pointingInfo': [5001, 4, 'A', 50., 60., 5., 4., 55
                                              'APOGEE-2&MaNGA', 'MaStar']}
 apogeeDesignNone = {'apogeeDesign':['?',-1], 'mangaExposureTime': [-1]}
 apogeeDesign1000 = {'apogeeDesign':['longplate',1000], 'mangaExposureTime': [-1]}
-apogeeDesignNone_manga_short = {'apogeeDesign':['?',-1], 'mangaExposureTime': [30]}
-apogeeDesign1000_manga_short = {'apogeeDesign':['longplate',1000], 'mangaExposureTime': [30]}
+apogeeDesignNone_manga_short = {'apogeeDesign':['?',-1], 'mangaExposureTime': [28]}
+apogeeDesign1000_manga_short = {'apogeeDesign':['longplate',1000], 'mangaExposureTime': [28]}
 noInstrumentPlugged = {'pluggedInstruments':[]}
 APOGEEInstrumentPlugged = {'pluggedInstruments':['APOGEE']}
 BOSSInstrumentPlugged = {'pluggedInstruments':['BOSS']}
