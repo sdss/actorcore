@@ -15,6 +15,7 @@ v4_1_8 (unreleased)
 Added
 ^^^^^
 * Some keys for MaStar testing in ``sopActor``.
+* ``guider_decenter`` bypass to ``TestHelper``.
 
 
 .. _changelog-v4_1_7:
