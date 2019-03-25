@@ -15,6 +15,7 @@ v4_1_8 (unreleased)
 Added
 ^^^^^
 * Some keys for MaStar testing in ``sopActor``.
+* Test keys for the ``MaNGA Globular`` survey mode.
 * ``guider_decenter`` bypass to ``TestHelper``.
 
 
