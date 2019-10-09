@@ -5,7 +5,7 @@
 #
 # @Author: Brian Cherinka
 # @Date:   2017-05-30 16:07:27
-# @Last modified by:   Brian Cherinka
+# @Last modified by: José Sánchez-Gallego
 # @Last Modified time: 2017-06-01 22:37:57
 
 from __future__ import print_function, division, absolute_import
@@ -102,6 +102,8 @@ class StageManager(object):
             nowlog = datetime.datetime.now().utcnow().isoformat() + '.log'
             logdir = os.path.join(self.product_logs_dir, nowlog)
             sym_link = os.path.join(self.product_logs_dir, 'current.log')
+
+            os.chdir(os.path.join(product_path, 'python/{0}'.format(self.actor))
 
             # start the actor
             actorcmd = 'python {0} > {1} 2>&1 &'.format(actorpath, logdir)
