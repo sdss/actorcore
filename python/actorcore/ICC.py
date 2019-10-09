@@ -46,8 +46,8 @@ class ICC(actorcore.Actor.Actor):
     def attachController(self, name, path=None, cmd=None):
         """ (Re-)load and attach a named set of commands. """
 
-        if path == None:
-            path = ['./Controllers']
+        if path is None:
+            path = [os.path.join(self.product_dir, 'python', self.productName, 'Controllers')]
 
         # import pdb; pdb.set_trace()
         self.logger.info("attaching controller %s from path %s", name, path)
@@ -58,7 +58,7 @@ class ICC(actorcore.Actor.Actor):
                               file, filename, path)
             mod = imp.load_module(name, file, filename, description)
             self.logger.debug('load_module(%s, %s, %s, %s) = %08x',
-                         name, file, filename, description, id(mod))
+                              name, file, filename, description, id(mod))
         except ImportError, e:
             raise RuntimeError('Import of %s failed: %s' % (name, e))
         finally:

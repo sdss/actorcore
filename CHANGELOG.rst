@@ -18,6 +18,10 @@ Added
 * Test keys for the ``MaNGA Globular`` survey mode.
 * ``guider_decenter`` bypass to ``TestHelper``.
 
+Fixed
+^^^^^
+* Use full path when attaching controllers in an ICC.
+
 
 .. _changelog-v4_1_7:
 
