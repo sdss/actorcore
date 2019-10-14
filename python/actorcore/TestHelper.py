@@ -223,12 +223,12 @@ platedbState['apogee'] = merge_dicts(apogeePointing,apogeeDesignNone, APOGEEInst
 platedbState['mangaDither'] = merge_dicts(mangaDitherPointing,apogeeDesignNone, BOSSInstrumentPlugged)
 platedbState['manga10'] = merge_dicts(manga10Pointing,apogeeDesignNone, BOSSInstrumentPlugged)
 platedbState['mangaStare'] = merge_dicts(mangaStarePointing,apogeeDesignNone, BOSSInstrumentPlugged)
-platedbState['mangaGlobular'] = merge_dicts(mangaGlobularPointing, apogeeDesignNone, BOSSInstrumentPlugged)
+platedbState['mangaGlobular'] = merge_dicts(mangaGlobularPointing, apogeeDesignNone_manga_short, BOSSInstrumentPlugged)
 platedbState['MaStar'] = merge_dicts(MaStarPointing, apogeeDesignNone, BOSSInstrumentPlugged)
 platedbState['MaStar_short'] = merge_dicts(MaStarPointing, apogeeDesignNone_manga_short, BOSSInstrumentPlugged)
 platedbState['MaStar_coobs_short'] = merge_dicts(MaStarPointing, apogeeDesignNone_manga_short, BothInstrumentsPlugged)
 platedbState['apgoeemangaDither'] = merge_dicts(apgoeemangaDitherPointing,apogeeDesignNone, BothInstrumentsPlugged)
-platedbState['apogeemangaGlobular'] = merge_dicts(apgoeemangaGlobularPointing, apogeeDesignNone, BothInstrumentsPlugged)
+platedbState['apogeemangaGlobular'] = merge_dicts(apgoeemangaGlobularPointing, apogeeDesignNone_manga_short, BothInstrumentsPlugged)
 platedbState['apgoeemanga10'] = merge_dicts(apgoeemanga10Pointing,apogeeDesignNone, BothInstrumentsPlugged)
 platedbState['apgoeemangaStare'] = merge_dicts(apogeemangaStarePointing,apogeeDesignNone, BothInstrumentsPlugged)
 platedbState['apogeemangaMaStar'] = merge_dicts(apogeemangaMaStarPointing, apogeeDesignNone,
@@ -263,7 +263,7 @@ ecameraState['ok'] = merge_dicts(gcameraTempOk,gcameraSeqNo,gcameraSimulatingOff
 # sop state setup
 bypasses = ["ffs", "lamp_ff", "lamp_hgcd", "lamp_ne", "axes",
             "isBoss", "isApogee",
-            "isMangaDither", "isMangaStare", 'isManga10', 'isMangaGlobular' 'isApogeeManga10',
+            "isMangaDither", "isMangaStare", 'isManga10', 'isMangaGlobular', 'isApogeeManga10',
             "isApogeeLead", "isApogeeMangaDither", "isApogeeMangaStare", 'isApogeeMangaGlobular',
             "gangToCart", "gangToPodium", "slewToField", "guiderDark", "guider_decenter",
             'isMaStar', 'isApogeeMangaMaStar']
