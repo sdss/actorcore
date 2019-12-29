@@ -1,11 +1,9 @@
-#!/usr/bin/env python
-"""Install this package. Requires sdss3tools.
+# encoding: utf-8
+#
+# setup.py
+#
 
-To use:
-python setup.py install
-"""
-import sdss3tools
+from setuptools import setup
 
-sdss3tools.setup(
-    description = "Common code base for SDSS-III actor system",
-)
+
+setup()

@@ -8,9 +8,9 @@
 # @Last modified by:   Brian Cherinka
 # @Last Modified time: 2017-06-01 00:36:24
 
-from __future__ import print_function, division, absolute_import
-from stagemanager.stagemanager import StageManager
 import pytest
+
+from stagemanager.stagemanager import StageManager
 
 
 @pytest.fixture()
@@ -76,15 +76,13 @@ class TestStageSetupEnv(object):
     def test_no_setups(self, sm, unload, name):
         prodpath = sm._get_actor_path()
         assert prodpath is None
-        with pytest.raises(RuntimeError) as cm:
+        with pytest.raises(RuntimeError):
             sm.__getattribute__('_try_{0}'.format(name))()
 
-    @pytest.mark.parametrize('host, user, errmsg',
-                             [(None, None, 'Current Host must be sdss4-hub'),
-                              (True, None, 'Current User must be sdss4')],
+    @pytest.mark.parametrize('host, user, errmsg', [(None, None, 'Current Host must be sdss4-hub'),
+                                                    (True, None, 'Current User must be sdss4')],
                              ids=['wronghost', 'wronguser'])
     def test_wrongsystem(self, actor, host, user, errmsg):
         with pytest.raises(AssertionError) as cm:
-            sm = StageManager(actor=actor, overhost=host, overuser=user)
+            StageManager(actor=actor, overhost=host, overuser=user)
         assert errmsg in str(cm.value)
-

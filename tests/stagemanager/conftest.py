@@ -8,13 +8,14 @@
 # @Last modified by:   Brian Cherinka
 # @Last Modified time: 2017-05-31 19:00:23
 
-from __future__ import print_function, division, absolute_import
-from stagemanager.stagemanager import StageManager
-import pytest
-import socket
-import os
-import sys
 import copy
+import os
+import socket
+import sys
+
+import pytest
+
+from stagemanager.stagemanager import StageManager
 
 actors = ['sopActor']
 
@@ -43,7 +44,7 @@ def unload(actor, monkeypatch):
 
 @pytest.fixture()
 def sm(actor, ishub, tmpdir):
-    logdir = str(tmpdir.mkdir("logs"))
+    logdir = str(tmpdir.mkdir('logs'))
     if ishub:
         sm = StageManager(actor=actor, logdir=logdir)
     else:
@@ -53,10 +54,3 @@ def sm(actor, ishub, tmpdir):
     if pid:
         sm.stop_actor()
     sm = None
-
-
-
-
-
-
-

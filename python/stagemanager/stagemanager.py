@@ -8,14 +8,14 @@
 # @Last modified by: José Sánchez-Gallego
 # @Last Modified time: 2017-06-01 22:37:57
 
-from __future__ import print_function, division, absolute_import
-from argparse import ArgumentParser
-import subprocess
-import os
-import psutil
 import datetime
+import os
 import socket
+import subprocess
 import time
+from argparse import ArgumentParser
+
+import psutil
 
 
 class StageManager(object):
@@ -46,13 +46,33 @@ class StageManager(object):
 
     def parse_args(self):
         ''' Parse the arguments for stageManager '''
-        parser = ArgumentParser(prog='stageManager', usage='%(prog)s [options]', description='stages an actor for use')
+        parser = ArgumentParser(prog='stageManager',
+                                usage='%(prog)s [options]',
+                                description='stages an actor for use')
         parser.add_argument('actor', type=str, help='name of the actor to manage', default=None)
-        parser.add_argument('command', type=str, help='name of the command to run',
-                            choices=['start', 'stop', 'kill', 'status', 'restart', 'listall'], default=None)
-        parser.add_argument('-l', '--logdir', type=str, dest='logdir', help='path to write log files', default=os.path.join(os.path.expanduser('~'), 'logs'))
-        parser.add_argument('-u', '--overrideuser', dest='overuser', help='override to the current user', action='store_true', default=False)
-        parser.add_argument('-o', '--overridehost', dest='overhost', help='override to the current host', action='store_true', default=False)
+        parser.add_argument('command',
+                            type=str,
+                            help='name of the command to run',
+                            choices=['start', 'stop', 'kill', 'status', 'restart', 'listall'],
+                            default=None)
+        parser.add_argument('-l',
+                            '--logdir',
+                            type=str,
+                            dest='logdir',
+                            help='path to write log files',
+                            default=os.path.join(os.path.expanduser('~'), 'logs'))
+        parser.add_argument('-u',
+                            '--overrideuser',
+                            dest='overuser',
+                            help='override to the current user',
+                            action='store_true',
+                            default=False)
+        parser.add_argument('-o',
+                            '--overridehost',
+                            dest='overhost',
+                            help='override to the current host',
+                            action='store_true',
+                            default=False)
 
         self.args = parser.parse_args()
 
@@ -72,7 +92,7 @@ class StageManager(object):
 
         # set the actor
         assert self.args.actor is not None, 'an actor must be specified'
-        for arg, val in self.args.__dict__.items():
+        for arg, val in list(self.args.__dict__.items()):
             self.__setattr__(arg, val)
 
     def start_actor(self):
@@ -89,7 +109,8 @@ class StageManager(object):
                 product_path = self._get_actor_path()
 
             actorbin = os.path.join(product_path, 'bin', '{0}_main.py'.format(self.actor))
-            oldactor = os.path.join(product_path, 'python/{0}'.format(self.actor), '{0}_main.py'.format(self.actor))
+            oldactor = os.path.join(product_path, 'python/{0}'.format(self.actor),
+                                    '{0}_main.py'.format(self.actor))
             # use the new actor_main in bin if it exists
             if os.path.isfile(actorbin):
                 actorpath = actorbin
@@ -108,7 +129,11 @@ class StageManager(object):
             # start the actor
             actorcmd = 'python {0} > {1} 2>&1 &'.format(actorpath, logdir)
             maincmd = actorcmd if not self.setupcmd else '{0}; {1}'.format(self.setupcmd, actorcmd)
-            p = subprocess.Popen(maincmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, executable='/bin/bash')
+            p = subprocess.Popen(maincmd,
+                                 shell=True,
+                                 stdout=subprocess.PIPE,
+                                 stderr=subprocess.STDOUT,
+                                 executable='/bin/bash')
             (out, err) = p.communicate()
 
             # Creates the symbolic link to the just-created log
@@ -206,20 +231,24 @@ class StageManager(object):
 
         cmdtype = 'modules' if 'module' in setup_cmd else 'eups'
         cmd = '{0}; echo ${1}_DIR'.format(setup_cmd, self.actor.upper())
-        p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE,
-                             stderr=subprocess.STDOUT, executable='/bin/bash')
+        p = subprocess.Popen(cmd,
+                             shell=True,
+                             stdout=subprocess.PIPE,
+                             stderr=subprocess.STDOUT,
+                             executable='/bin/bash')
         (out, err) = p.communicate()
 
         # check it
         if ('ERROR' in out or 'command not found' in out):
-            raise RuntimeError('Could not setup product {0} with {1}.  Please setup manually.:\n{2}'.format(self.actor, cmdtype, out))
+            raise RuntimeError(
+                'Could not setup product {0} with {1}.  Please setup manually.:\n{2}'.format(
+                    self.actor, cmdtype, out))
         else:
             out = out.strip('\n')
             return out
 
     def _try_modules(self):
         ''' Try setup with modules '''
-        product_path = self._get_actor_path()
         module_cmd = self._setup_cmd()
 
         # run the module process
@@ -228,7 +257,6 @@ class StageManager(object):
 
     def _try_eups(self):
         ''' Try setup with eups '''
-        product_path = self._get_actor_path()
         eups_cmd = self._setup_cmd(eups=True)
 
         # run the eups process
@@ -264,7 +292,7 @@ class StageManager(object):
 
     def _read_the_config(self):
         ''' Read the stage manager config file '''
-        sm_cfg = os.path.join(self.current_actorcore_dir, 'etc/stageManager.cfg')
+        sm_cfg = os.path.join(os.path.dirname(__file__), 'etc/stageManager.cfg')
         f = open(sm_cfg, 'r')
         data = f.read().splitlines()
         f.close()
