@@ -174,23 +174,21 @@ class Actor(object):
         Kwargs:
             productName (str): the name of the product; defaults to name
             configFile (str): the full path of the configuration file; defaults
-                to $PRODUCTNAME_DIR/etc/$name.cfg
+                to etc/$name.cfg
             makeCmdrConnection (bool): establish self.cmdr as a command connection to the hub.
         """
         # Define/save the actor name, the product name, the product_DIR, and the
         # configuration file.
         self.name = name
-        self.productName = productName if productName else self.name
+        self.productName = productName or self.name
 
-        product_dir_name = '$%s_DIR' % (self.productName.upper()) \
-            if productDir is None else productDir
-        self.product_dir = os.path.expandvars(product_dir_name)
+        product_dir_name = os.path.dirname(__file__) if productDir is None else productDir
+        self.product_dir = product_dir_name
 
         if not self.product_dir:
             raise RuntimeError('environment variable %s must be defined' % (product_dir_name))
 
-        self.configFile = configFile if configFile else \
-            os.path.expandvars(os.path.join(self.product_dir, 'etc', '%s.cfg' % (self.name)))
+        self.configFile = configFile or os.path.join(self.product_dir, f'etc/{self.name}.cfg')
 
         self.read_config_files()
 
