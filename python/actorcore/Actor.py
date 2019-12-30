@@ -565,14 +565,14 @@ class SDSSActor(Actor, metaclass=abc.ABCMeta):
         super(SDSSActor, self).read_config_files()
 
         if 'SDSSCORE_DIR' not in os.environ:
-            logging.warn('cannot find SDSSCORE_DIR.', UserWarning)
+            logging.warn('cannot find SDSSCORE_DIR.')
             return
 
         sdsscore_config_file = os.path.join(os.environ['SDSSCORE_DIR'],
                                             f'actors/{self.name}.yaml')
 
         if not os.path.exists(sdsscore_config_file):
-            logging.warn(f'cannot find {sdsscore_config_file}.', UserWarning)
+            logging.warn(f'cannot find {sdsscore_config_file}.')
             return
 
         sdsscore_config = yaml.full_load(open(sdsscore_config_file))
