@@ -183,7 +183,8 @@ class Actor(object):
         self.name = name
         self.productName = productName or self.name
 
-        class_path = os.path.dirname(os.path.abspath(inspect.getfile(self.__class__)))
+        mod = importlib.import_module(self.productName)
+        class_path = os.path.dirname(mod.__file__)
         product_dir_name = productDir or class_path
         self.product_dir = product_dir_name
 
