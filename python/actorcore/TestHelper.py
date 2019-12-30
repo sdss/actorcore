@@ -2,6 +2,7 @@
 Help for writing test cases that need a Cmdr, Model, Actor, etc.
 """
 
+import importlib
 import io
 import logging
 import os
@@ -16,11 +17,9 @@ from opscore.protocols import keys, messages, parser
 
 from . import Actor
 
-
 call_lock = threading.RLock()
 
 # To allow fake-setting/handling of the various actor models.
-global globalModels
 globalModels = {}
 
 
@@ -32,10 +31,10 @@ def merge_dicts(*args):
 # MCP state setup
 ffsClosed = {'ffsStatus': ['01'] * 8}
 ffsOpen = {'ffsStatus': ['10'] * 8}
-arcOn = {'hgCdLamp': [1] * 4, 'neLamp': [1] * 4}
-arcOff = {'hgCdLamp': [0] * 4, 'neLamp': [0] * 4}
-flatOn = {'ffLamp': [1] * 4}
-flatOff = {'ffLamp': [0] * 4}
+arcOn = {'hgCdLamp': ['1'] * 4, 'neLamp': ['1'] * 4}
+arcOff = {'hgCdLamp': ['0'] * 4, 'neLamp': ['0'] * 4}
+flatOn = {'ffLamp': ['1'] * 4}
+flatOff = {'ffLamp': ['0'] * 4}
 othersOff = {'whtLampCommandedOn': [0],
              'uvLampCommandedOn': [0]}
 semaphoreGood = {'semaphoreOwner': ['None']}
@@ -537,7 +536,6 @@ class Cmd(object):
             gotKey = txt.split('=')[0]
             if key == gotKey:
                 val = txt.split('=')[-1].split(',')
-                global globalModels
                 val = [x.strip().strip('"') for x in val]
                 globalModels['sop'].keyVarDict[key].set(val)
 
@@ -662,7 +660,6 @@ class Cmd(object):
             print('ValueError in apogee_succeed:', e)
             didFail = True
         else:
-            global globalModels
             globalModels['apogee'].keyVarDict[key].set(newVal[key])
 
         return didFail
@@ -702,7 +699,6 @@ class Cmd(object):
     def _fake_boss_readout(self, cmd):
         """Behave like the real camera regarding when readouts are allowed or not."""
 
-        global globalModels
         currentExpId = globalModels['boss'].keyVarDict['exposureId'].getValue()
 
         didFail = False
@@ -777,7 +773,6 @@ class Cmd(object):
                 return didFail
             else:
                 key, newVal = result
-            global globalModels
             globalModels['tcc'].keyVarDict[key].set(newVal[key])
 
         return didFail
@@ -815,7 +810,6 @@ class Cmd(object):
                 return didFail
             else:
                 key, newVal = result
-            global globalModels
             globalModels['mcp'].keyVarDict[key].set(newVal)
 
         return didFail
@@ -827,7 +821,6 @@ class Cmd(object):
         Return the new key/value pair, or None if nothing is to be changed.
         """
         key = lamp + 'Lamp'
-        global globalModels
         val = globalModels['mcp'].keyVarDict[key].getValue()
 
         if (state == 'on' and sum(val) == 4) or (state == 'off' and val == 0):
@@ -881,7 +874,6 @@ class Cmd(object):
                 # just succeed
                 return False
             elif cmd.name == 'loadCartridge':
-                global globalModels
                 globalModels['guider'].keyVarDict['cartridgeLoaded'].set(
                     bossLoaded['cartridgeLoaded'])
                 globalModels['guider'].keyVarDict['survey'].set(bossLoaded['survey'])
@@ -895,7 +887,6 @@ class Cmd(object):
             print('ValueError in guider_succeed:', e)
             didFail = True
         else:
-            global globalModels
             globalModels['guider'].keyVarDict[key].set(newVal[key])
 
         return didFail
@@ -914,7 +905,6 @@ class Cmd(object):
             newVal = mangaCenabled
         else:
             raise ValueError("I don't know what to do with this mangaDither: %s" % keywords)
-        global globalModels
         globalModels['guider'].keyVarDict['mangaDither'].set(newVal['mangaDither'])
         return key, newVal
 
@@ -941,7 +931,6 @@ class Cmd(object):
             self.replyList.append(messages.Reply('', [messages.Keyword('Timeout')]))
 
         if key is not None:
-            global globalModels
             globalModels['guider'].keyVarDict[key].set(newVal[key])
 
 
@@ -1055,11 +1044,6 @@ class ActorTester(object):
             'mcp': mcpState['all_off'],
             'apogee': apogeeState['A_closed'],
             'tcc': tccState['halted'],
-            'guider': guiderState['bossLoaded'],
-            'platedb': platedbState['boss'],
-            'gcamera': gcameraState['ok'],
-            'ecamera': ecameraState['ok'],
-            'sop': sopState['ok'],
             'boss': bossState['idle'],
             'apo': apoState['default'],
             'hartmann': hartmannState['default']
@@ -1197,6 +1181,7 @@ class Model(object):
     def __init__(self, actor, keyDict={}):
         self.actor = actor
         self.myKeys = keys.KeysDictionary.load(actor)
+
         self.keyVarDict = {}
         for k, v in list(keyDict.items()):
             self.keyVarDict[k] = keyvar.KeyVar(actor, self.myKeys[k])  # ,doPrint=True)
@@ -1229,13 +1214,16 @@ class FakeActor(Actor.SDSSActor):
                  configFile=None,
                  location=None,
                  attachCmdSets=True):
+
         self.name = name
-        self.location = location
+        self.location = location or 'LOCAL'
         self.productName = productName if productName else self.name
-        product_dir_name = '$%s_DIR' % (self.productName.upper())
-        self.product_dir = os.path.expandvars(product_dir_name)
-        self.configFile = configFile if configFile else os.path.expandvars(
-            os.path.join(self.product_dir, 'etc', '{0}_{1}.cfg'.format(self.name, self.location)))
+
+        mod = importlib.import_module(self.productName)
+        class_path = os.path.dirname(mod.__file__)
+        self.product_dir = class_path
+
+        self.configFile = configFile or os.path.join(self.product_dir, f'etc/{self.name}.yaml')
 
         self.cmdLog = logging.getLogger('cmds')
         self.logger = logging.getLogger('logger')
