@@ -143,7 +143,6 @@ class Cmd(object):
                 elif isinstance(kt, types.String):
                     arg.values.append([kt, "\"SSS\""])
                 else:
-                    print('RHL', kt)
                     # import pdb; pdb.set_trace()
                     arg.values.append([kt, '???'])
 
@@ -191,7 +190,6 @@ class Cmd(object):
                 elif isinstance(kt, types.String):
                     argVal += "\"SSS\""
                 else:
-                    print('RHL', kt)
                     # import pdb; pdb.set_trace()
                     argVal += '???'
 

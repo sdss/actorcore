@@ -13,7 +13,6 @@ a twisted reactor, depending on the value of runInReactorThread.
 """
 
 import abc
-import configparser
 import imp
 import importlib
 import inspect
@@ -26,15 +25,17 @@ import sys
 import threading
 import traceback
 
-from twisted.internet import reactor
-
 import opscore
 import opscore.protocols.keys as keys
 import opscore.protocols.validation as validation
+import yaml
 from opscore.protocols.parser import CommandParser
 from opscore.utility.qstr import qstr
 from opscore.utility.sdss3logging import setConsoleLevel, setupRootLogger
 from opscore.utility.tback import tback
+from twisted.internet import reactor
+
+from actorcore.utility.configuration import merge_config
 
 from . import CmdrConnection
 from . import Command as actorCmd
@@ -182,13 +183,14 @@ class Actor(object):
         self.name = name
         self.productName = productName or self.name
 
-        product_dir_name = os.path.dirname(__file__) if productDir is None else productDir
+        class_path = os.path.dirname(os.path.abspath(inspect.getfile(self.__class__)))
+        product_dir_name = productDir or class_path
         self.product_dir = product_dir_name
 
         if not self.product_dir:
             raise RuntimeError('environment variable %s must be defined' % (product_dir_name))
 
-        self.configFile = configFile or os.path.join(self.product_dir, f'etc/{self.name}.cfg')
+        self.configFile = configFile or os.path.join(self.product_dir, f'etc/{self.name}.yaml')
 
         self.read_config_files()
 
@@ -198,8 +200,8 @@ class Actor(object):
         self.parser = CommandParser()
 
         # The list of all connected sources.
-        tronInterface = self.config.get('tron', 'interface')
-        tronPort = self.config.getint('tron', 'port')
+        tronInterface = self.config['tron']['interface'] or ''
+        tronPort = self.config['tron']['port']
         self.commandSources = cmdLinkManager.listen(self, port=tronPort, interface=tronInterface)
         # The Command which we send uncommanded output to.
         self.bcast = actorCmd.Command(self.commandSources, 'self.0', 0, 0, None, immortal=True)
@@ -233,16 +235,17 @@ class Actor(object):
 
     def read_config_files(self):
         """Read the config file(s) in etc/"""
+
         # Missing config bits should make us blow up.
         self.configFile = os.path.expandvars(self.configFile)
         logging.warn('reading config file %s', self.configFile)
-        self.config = configparser.ConfigParser()
-        self.config.read(self.configFile)
+
+        self.config = yaml.full_load(open(self.configFile))
 
     def configureLogs(self, cmd=None):
         """ (re-)configure our logs. """
 
-        self.logDir = self.config.get('logging', 'logdir')
+        self.logDir = self.config['logging']['logdir']
         assert self.logDir, 'logdir must be set!'
 
         # Make the root logger go to a rotating file. All others derive from this.
@@ -250,22 +253,22 @@ class Actor(object):
 
         # The real stderr/console filtering is actually done through the console Handler.
         try:
-            consoleLevel = int(self.config.get('logging', 'consoleLevel'))
+            consoleLevel = int(self.config['logging']['consoleLevel'])
         except BaseException:
-            consoleLevel = int(self.config.get('logging', 'baseLevel'))
+            consoleLevel = int(self.config['logging']['baseLevel'])
         setConsoleLevel(consoleLevel)
 
         # self.console needs to be renamed ore deleted, I think.
         self.console = logging.getLogger('')
-        self.console.setLevel(int(self.config.get('logging', 'baseLevel')))
+        self.console.setLevel(int(self.config['logging']['baseLevel']))
 
         self.logger = logging.getLogger('actor')
-        self.logger.setLevel(int(self.config.get('logging', 'baseLevel')))
+        self.logger.setLevel(int(self.config['logging']['baseLevel']))
         self.logger.propagate = True
         self.logger.info('(re-)configured root and actor logs')
 
         self.cmdLog = logging.getLogger('cmds')
-        self.cmdLog.setLevel(int(self.config.get('logging', 'cmdLevel')))
+        self.cmdLog.setLevel(int(self.config['logging']['cmdLevel']))
         self.cmdLog.propagate = True
         self.cmdLog.info('(re-)configured cmds log')
 
@@ -328,7 +331,7 @@ class Actor(object):
         """ (Re-)load and attach a named set of commands. """
 
         if path is None:
-            path = [os.path.join(self.product_dir, 'python', self.productName, 'Commands')]
+            path = [os.path.join(self.product_dir, 'Commands')]
 
         self.logger.info('attaching command set %s from path %s', cname, path)
 
@@ -387,10 +390,9 @@ class Actor(object):
 
         if path is None:
             self.attachAllCmdSets(
-                path=os.path.join(os.path.expandvars('$ACTORCORE_DIR'),
-                                  'python', 'actorcore', 'Commands'))
+                path=os.path.join(os.path.dirname(__file__), 'Commands'))
             self.attachAllCmdSets(
-                path=os.path.join(self.product_dir, 'python', self.productName, 'Commands'))
+                path=os.path.join(self.product_dir, 'Commands'))
             return
 
         dirlist = sorted(os.listdir(path))
@@ -499,7 +501,7 @@ class Actor(object):
     def run(self, doReactor=True):
         """ Actually run the twisted reactor. """
         try:
-            self.runInReactorThread = self.config.getboolean(self.name, 'runInReactorThread')
+            self.runInReactorThread = self.config[self.name]['runInReactorThread']
         except BaseException:
             self.runInReactorThread = False
 
@@ -524,6 +526,7 @@ class SDSSActor(Actor, metaclass=abc.ABCMeta):
     After subclassing it and replacing newActor(), create and start a new actor via:
         someActor = someActor.newActor()
         someActor.run(someActor.Msg)
+
     """
 
     @abc.abstractmethod
@@ -535,12 +538,17 @@ class SDSSActor(Actor, metaclass=abc.ABCMeta):
         pass
 
     @staticmethod
-    def _determine_location(location=None):
-        """Set self.location based on the domain name."""
+    def determine_location(location=None):
+        """Returns location based on the domain name or ``$OBSERVATORY``."""
+
+        location = location or os.environ.get('OBSERVATORY', None)
+
         if location is None:
             fqdn = socket.getfqdn().split('.')
         else:
-            return location.upper()
+            location = location.upper()
+            assert location in ['APO', 'LCO', 'LOCAL'], 'invalid location'
+            return location
 
         if 'apo' in fqdn:
             return 'APO'
@@ -552,10 +560,44 @@ class SDSSActor(Actor, metaclass=abc.ABCMeta):
             return None
 
     def read_config_files(self):
+        """Overrides internal configuration with the one found in sdsscore."""
+
         super(SDSSActor, self).read_config_files()
-        locationFile = '_'.join(
-            (os.path.splitext(self.configFile)[0], format(self.location))) + '.cfg'
-        self.config.read(locationFile)
+
+        if 'SDSSCORE_DIR' not in os.environ:
+            logging.warn('cannot find SDSSCORE_DIR.', UserWarning)
+            return
+
+        sdsscore_config_file = os.path.join(os.environ['SDSSCORE_DIR'],
+                                            f'actors/{self.name}.yaml')
+
+        if not os.path.exists(sdsscore_config_file):
+            logging.warn(f'cannot find {sdsscore_config_file}.', UserWarning)
+            return
+
+        sdsscore_config = yaml.full_load(open(sdsscore_config_file))
+
+        use_location = sdsscore_config.pop('use_location', False)
+
+        if not use_location:
+
+            self.config = merge_config(sdsscore_config, self.config)
+
+        else:
+
+            location_section = sdsscore_config.get(self.location.upper(), None)
+
+            if location_section is None:
+                location_section = sdsscore_config.get(self.location.lower(), None)
+
+            if location_section is None:
+                logging.warn(f'cannot find section for location '
+                             f'{self.location} in {sdsscore_config_file}.')
+                return
+
+            self.config = merge_config(location_section, self.config)
+
+        logging.warn(f'loaded {self.location} configuration from {sdsscore_config_file}.')
 
     def attachAllCmdSets(self, path=None):
         """
@@ -594,7 +636,7 @@ class SDSSActor(Actor, metaclass=abc.ABCMeta):
             self.startThreads(Msg, restartQueues=True, restart=False, queueClass=queueClass)
 
         try:
-            self.runInReactorThread = self.config.getboolean(self.name, 'runInReactorThread')
+            self.runInReactorThread = self.config[self.name]['runInReactorThread']
         except BaseException:
             self.runInReactorThread = False
 

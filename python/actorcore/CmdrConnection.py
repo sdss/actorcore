@@ -148,7 +148,7 @@ class Cmdr(object):
         # in to the Model "singleton"
         logger = logging.getLogger('dispatch')
         try:
-            dispatchLevel = self.actor.config.get('logging', 'dispatchLevel')
+            dispatchLevel = self.actor.config['logging']['dispatchLevel']
         except BaseException:
             dispatchLevel = logging.WARN
         logger.setLevel(dispatchLevel)
@@ -166,8 +166,8 @@ class Cmdr(object):
         pass
 
     def connect(self):
-        tronHost = self.actor.config.get('tron', 'tronHost')
-        tronPort = int(self.actor.config.get('tron', 'tronCmdrPort'))
+        tronHost = self.actor.config['tron']['tronHost']
+        tronPort = int(self.actor.config['tron']['tronCmdrPort'])
 
         reactor.connectTCP(tronHost, tronPort, self.connector)
 

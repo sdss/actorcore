@@ -48,7 +48,7 @@ class ICC(actorcore.Actor.Actor):
         # Create a separate logger for controller io
         makeOpsFileLogger(os.path.join(self.logDir, 'io'), 'io')
         self.iolog = logging.getLogger('io')
-        self.iolog.setLevel(int(self.config.get('logging', 'ioLevel')))
+        self.iolog.setLevel(int(self.config['logging']['ioLevel']))
         self.iolog.propagate = False
 
     def attachController(self, name, path=None, cmd=None):
@@ -96,7 +96,7 @@ class ICC(actorcore.Actor.Actor):
         """ (Re-)load and (re-)connect to the hardware controllers listed in config:"icc".controllers.
         """
 
-        clist = eval(self.config.get(self.name, 'controllers'))
+        clist = eval(self.config[self.name]['controllers'])
         self.logger.info('All controllers = %s', clist)
         for c in clist:
             if c not in self.allControllers:

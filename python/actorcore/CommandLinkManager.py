@@ -4,7 +4,7 @@ import logging
 
 from twisted.internet.protocol import Factory
 
-from .CommandLink import CommandLink
+from actorcore.CommandLink import CommandLink
 
 
 class CommandLinkManager(Factory):
@@ -29,6 +29,8 @@ class CommandLinkManager(Factory):
 
         self.activeConnections = []
         self.connID = 1
+
+        super().__init__()
 
     def fetchCid(self):
         """ Return the next available connection ID. """
@@ -56,6 +58,7 @@ class CommandLinkManager(Factory):
         p.factory = self
 
         self.activeConnections.append(p)
+
         return p
 
     def loseConnection(self, c):
@@ -78,8 +81,8 @@ class CommandLinkManager(Factory):
 
 def listen(actor, port, interface=''):
     """ Launch a manager listening on a given interface+port"""
-    from twisted.internet import reactor
 
+    from twisted.internet import reactor
     mgr = CommandLinkManager(actor)
     port = reactor.listenTCP(port, mgr, interface=interface)
     mgr.port = port

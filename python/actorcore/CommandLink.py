@@ -52,16 +52,29 @@ class CommandLink(LineReceiver):
         cmd = Command(self.factory, cmdrName, self.connID, 0, '')
         cmd.finish('yourUserNum=%d' % self.connID)
 
-    def lineReceived(self, cmdString):
-        """ Called when a complete line has been read from the hub. """
+    def dataReceived(self, cmdString):
+        """ Called when a complete line has been read from the hub.
+
+        This used to be lineReceived but something changed in Twisted ...
+        Also, dealing with Unicode vs bytes.
+
+        """
+
+        # Deal with unicode
+        cmdString = cmdString.decode().strip()
+
+        # NOTE: JSG - I'm commenting this since I'm not sure what's the point.
+        # It doesn't seem to deal with the delimiters for each message received;
+        # maybe something has happened with Twisted. It seems just stripping
+        # does work fine ...
 
         # Telnet connections send back '\r\n'. Or worse, I fear. Try to make
         # those connections work just like properly formatted ones.
-        if not self.delimiterChecked:
-            while len(cmdString) > 0 and cmdString[-1] < ' ':
-                self.delimiter = cmdString[-1] + self.delimiter
-                cmdString = cmdString[:-1]
-            self.delimiterChecked = True
+        # if not self.delimiterChecked:
+        #     while len(cmdString) > 0 and cmdString[-1] < ' ':
+        #         self.delimiter = cmdString[-1] + self.delimiter
+        #         cmdString = cmdString[:-1]
+        #     self.delimiterChecked = True
 
         # Parse the header...
         m = self.cmdRe.match(cmdString)
