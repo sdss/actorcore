@@ -4,9 +4,9 @@ import os
 import tempfile
 import threading
 
+import astropy.io.fits as fits
 import numpy
 
-import pyfits
 from opscore.utility.qstr import qstr
 
 
@@ -21,10 +21,10 @@ def extendHeader(cmd, header, cards):
 
 
 def makeCard(cmd, name, value, comment=''):
-    """ Creates a pyfits Card. Does not raise exceptions. """
+    """ Creates a fits Card. Does not raise exceptions. """
 
     try:
-        return pyfits.Card(name, value, comment)
+        return fits.Card(name, value, comment)
     except BaseException:
         errStr = 'failed to make %s card from %s' % (name, value)
         cmd.warn('text=%s' % (qstr(errStr)))
@@ -33,7 +33,7 @@ def makeCard(cmd, name, value, comment=''):
 
 def makeCardFromKey(cmd, keyDict, keyName, cardName, cnv=None, idx=None, comment='', onFail=None):
     """
-    Creates a pyfits Card from a Key. Does not raise exceptions.
+    Creates a fits Card from a Key. Does not raise exceptions.
     If comment is None, use "keyName: keyDict[keyName].help" for the comment string.
     """
 
@@ -79,7 +79,7 @@ def makeCardFromKey(cmd, keyDict, keyName, cardName, cnv=None, idx=None, comment
 
 
 def mcpCards(models, cmd=None):
-    """ Return a list of pyfits Cards describing the MCP state. """
+    """ Return a list of fits Cards describing the MCP state. """
 
     d = []
 
@@ -114,7 +114,7 @@ def mcpCards(models, cmd=None):
 
 
 def apoCards(models, cmd=None):
-    """ Return a list of pyfits Cards describing APO weather state. """
+    """ Return a list of fits Cards describing APO weather state. """
 
     cards = []
     weatherDict = models['apo'].keyVarDict
@@ -160,7 +160,7 @@ def apoCards(models, cmd=None):
 
 
 def lcoTCCCards(models, cmd=None):
-    """ Return a list of pyfits Cards describing the TCC state. """
+    """ Return a list of fits Cards describing the TCC state. """
 
     cards = []
 
@@ -404,7 +404,7 @@ def lcoTCCCards(models, cmd=None):
 
 
 def tccCards(models, cmd=None):
-    """ Return a list of pyfits Cards describing the TCC state. """
+    """ Return a list of fits Cards describing the TCC state. """
 
     cards = []
 
@@ -577,10 +577,9 @@ def tccCards(models, cmd=None):
         primOrient = tccDict['primOrient']
         orientNames = ('piston', 'xtilt', 'ytilt', 'xtran', 'ytran', 'zrot')
         for i in range(len(orientNames)):
-            cards.append(
-                makeCard(cmd,
-                         'M1' + orientNames[i], float(primOrient[i]),
-                         'TCC PrimOrient'))
+            cards.append(makeCard(cmd,
+                                  'M1' + orientNames[i], float(primOrient[i]),
+                                  'TCC PrimOrient'))
     except Exception as e:
         cmd.warn("text='failed to generate the PrimOrient cards: %s'" % (e))
 
@@ -597,7 +596,7 @@ def tccCards(models, cmd=None):
 
 
 def plateCards(models, cmd):
-    """ Return a list of pyfits Cards describing the plate/cartrige/pointing"""
+    """ Return a list of fits Cards describing the plate/cartrige/pointing"""
 
     nameComment = 'guider.cartridgeLoaded error'
     try:
@@ -643,14 +642,15 @@ def plateCards(models, cmd):
                         'v_sop',
                         comment='version of the current sopActor',
                         onFail='Unknown'))
+
     cards.append(makeCard(cmd, 'NAME', name, nameComment))
     cards.append(makeCard(cmd, 'PLATEID', plate, 'The currently loaded plate'))
     cards.append(makeCard(cmd, 'CARTID', cartridge, 'The currently loaded cartridge'))
     cards.append(makeCard(cmd, 'MAPID', mapping, 'The mapping version of the loaded plate'))
     cards.append(makeCard(cmd, 'POINTING', pointing, 'The currently specified pointing'))
-    cards.append(
-        makeCard(cmd, 'PLATETYP', plateType,
-                 'Type of plate (e.g. BOSS, MANGA, APOGEE, APOGEE-MANGA)'))
+    cards.append(makeCard(cmd, 'PLATETYP', plateType, 'Type of plate (e.g. BOSS, MANGA, '
+                                                      'APOGEE, APOGEE-MANGA)'))
+
     # Only include survey mode when it has been specified.
     if surveyMode is not None and survey != 'None':
         cards.append(
@@ -660,7 +660,7 @@ def plateCards(models, cmd):
 
 
 def guiderCards(models, cmd):
-    """Return a list of pyfits Cards describing the current guider status."""
+    """Return a list of fits Cards describing the current guider status."""
     try:
         mangaDitherKey = models['guider'].keyVarDict['mangaDither']
         mangaDither = mangaDitherKey[0]
