@@ -1,4 +1,4 @@
-.. _actorcore-changelog:
+.. _actorcore-actorcore:
 
 ==========
 Change Log
@@ -7,7 +7,7 @@ Change Log
 This document records the main changes to the actorcore code.
 
 
-.. _changelog-5.0.0:
+.. _actorcore-5.0.0:
 
 5.0.0 (unreleased)
 ------------------
@@ -17,7 +17,7 @@ Support
 * Modify to work with Python 3 (only). Removed SVN tools. Refactored FITS tools to work with ``astropy``.
 
 
-.. _changelog-v4_1_8:
+.. _actorcore-v4_1_8:
 
 v4_1_8 (2019-10-09)
 -------------------
@@ -33,7 +33,7 @@ Fixed
 * Use full path when attaching controllers in an ICC.
 
 
-.. _changelog-v4_1_7:
+.. _actorcore-v4_1_7:
 
 v4_1_7 (2018-09-23)
 -------------------
@@ -47,7 +47,7 @@ Fixed
 * Fix ``_determine_location`` that failed for ``sdss4-apogee`` at LCO because ``'apo'`` is in ``'apogee'``
 
 
-.. _changelog-v4_1_6:
+.. _actorcore-v4_1_6:
 
 v4_1_6 (2017-12-20)
 -------------------
@@ -57,7 +57,7 @@ Added
 * Added ``productDir`` to ``ICC``.
 
 
-.. _changelog-v4_1_5:
+.. _actorcore-v4_1_5:
 
 v4_1_5 (2017-12-20)
 -------------------
@@ -67,7 +67,7 @@ Added
 * Added ``lcoGcameraICC``.
 
 
-.. _changelog-v4_1_4:
+.. _actorcore-v4_1_4:
 
 v4_1_4 (2017-12-20)
 -------------------
@@ -77,7 +77,7 @@ Added
 * Added ``lcoSopActor`` to the ``stageManager`` list.
 
 
-.. _changelog-v4_1_3:
+.. _actorcore-v4_1_3:
 
 v4_1_3 (2017-12-19)
 -------------------
@@ -89,7 +89,7 @@ Added
 * Added option to specify the product directory when initialising the actor.
 
 
-.. _changelog-v4_1_2:
+.. _actorcore-v4_1_2:
 
 v4_1_2 (2017-12-17)
 -------------------
@@ -99,7 +99,7 @@ Fixed
 * Fixed a bug in the new version of ``stageManager`` that would fail reading comments from the configuration file.
 
 
-.. _changelog-v4_1_1:
+.. _actorcore-v4_1_1:
 
 v4_1_1 (2017-11-06)
 -------------------
@@ -109,7 +109,7 @@ Fixed
 * In SDSSActor.startThreads(), the queues were being started without the thread name for SOP, which caused much pain and confusion.
 
 
-.. _changelog-v4_1:
+.. _actorcore-v4_1:
 
 v4_1 (2017-06-11)
 -----------------
