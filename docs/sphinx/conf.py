@@ -130,7 +130,7 @@ html_theme_options = {
     'navbar_title': "SDSS: {0}".format(project),
 
     # Tab name for entire site. (Default: "Site")
-    'navbar_site_name': "Site",
+    # 'navbar_site_name': "Site",
 
     # A list of tuples containing pages or urls to link to.
     # Valid tuples should be in the following forms:
@@ -146,7 +146,7 @@ html_theme_options = {
     'navbar_sidebarrel': False,
 
     # Render the current pages TOC in the navbar. (Default: true)
-    'navbar_pagenav': False,
+    'navbar_pagenav': True,
 
     # Tab name for the current pages TOC. (Default: "Page")
     'navbar_pagenav_name': "Page",
@@ -211,8 +211,9 @@ html_sidebars = {'**': ['localtoc.html']}
 def setup(app):
     """Downloads CAHNGELOG files from tron and opscore."""
 
-    urllib.request.urlretrieve('https://raw.githubusercontent.com/sdss/tron/py3/CHANGELOG.rst'
-                               '?token=AAEK3R7YPFEB7MHR2XP5NTC6CPDSA',
+    urllib.request.urlretrieve('https://raw.githubusercontent.com/sdss/tron/py3/CHANGELOG.rst',
                                'changelog_tron.rst')
     urllib.request.urlretrieve('https://raw.githubusercontent.com/sdss/opscore/py3/CHANGELOG.rst',
                                'changelog_opscore.rst')
+    urllib.request.urlretrieve('https://raw.githubusercontent.com/sdss/actorkeys/sdss5/CHANGELOG.rst',
+                               'changelog_actorkeys.rst')
