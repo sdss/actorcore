@@ -211,9 +211,9 @@ html_sidebars = {'**': ['localtoc.html']}
 def setup(app):
     """Downloads CAHNGELOG files from tron and opscore."""
 
-    urllib.request.urlretrieve('https://raw.githubusercontent.com/sdss/tron/py3/CHANGELOG.rst',
+    urllib.request.urlretrieve('https://raw.githubusercontent.com/sdss/tron/master/CHANGELOG.rst',
                                'changelog_tron.rst')
-    urllib.request.urlretrieve('https://raw.githubusercontent.com/sdss/opscore/py3/CHANGELOG.rst',
+    urllib.request.urlretrieve('https://raw.githubusercontent.com/sdss/opscore/master/CHANGELOG.rst',
                                'changelog_opscore.rst')
     urllib.request.urlretrieve('https://raw.githubusercontent.com/sdss/actorkeys/sdss5/CHANGELOG.rst',
                                'changelog_actorkeys.rst')
