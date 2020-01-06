@@ -28,4 +28,4 @@ def get_version():
 
 __version__ = get_version()
 
-NAME = 'actorcore'
+NAME = 'sdss-actorcore'
