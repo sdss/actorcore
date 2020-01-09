@@ -570,7 +570,7 @@ class SDSSActor(Actor, metaclass=abc.ABCMeta):
             return
 
         sdsscore_config_file = os.path.join(os.environ['SDSSCORE_DIR'],
-                                            f'actors/{self.name}.yaml')
+                                            f'configuration_files/actors/{self.name}.yaml')
 
         if not os.path.exists(sdsscore_config_file):
             logging.warn(f'cannot find {sdsscore_config_file}.')
