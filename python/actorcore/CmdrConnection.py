@@ -50,11 +50,7 @@ class CmdrConnection(LineReceiver):
            replyStr   - the new reply line.
         """
 
-<<<<<<< HEAD
-        self.logger.debug("read: " + replyStr)
-=======
         self.logger.debug('read: ' + replyStr.decode())
->>>>>>> 623286e (Use bytes for EOL)
         self.readCallback(self.transport, replyStr)
 
 
