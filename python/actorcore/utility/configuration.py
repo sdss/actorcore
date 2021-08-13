@@ -6,7 +6,7 @@
 # @Filename: configuration.py
 # @License: BSD 3-clause (http://www.opensource.org/licenses/BSD-3-Clause)
 
-__all__ = ['merge_config']
+__all__ = ["merge_config"]
 
 
 def merge_config(user, default):

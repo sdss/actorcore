@@ -1,4 +1,4 @@
-__all__ = ['CommandLinkManager', 'listen']
+__all__ = ["CommandLinkManager", "listen"]
 
 import logging
 
@@ -8,12 +8,12 @@ from actorcore.CommandLink import CommandLink
 
 
 class CommandLinkManager(Factory):
-    """ Launch an instance of the given Protocol when a new connection comes in. """
+    """Launch an instance of the given Protocol when a new connection comes in."""
 
     protocol = CommandLink
 
-    def __init__(self, brains, protocolName='CommandLink'):
-        """ Manage a dynamic set of CommandLinks.
+    def __init__(self, brains, protocolName="CommandLink"):
+        """Manage a dynamic set of CommandLinks.
 
         Args:
            brains  - the object which operates on new Commands. Simply passed in to the
@@ -33,7 +33,7 @@ class CommandLinkManager(Factory):
         super().__init__()
 
     def fetchCid(self):
-        """ Return the next available connection ID. """
+        """Return the next available connection ID."""
 
         cid = self.connID
         self.connID += 1
@@ -62,7 +62,7 @@ class CommandLinkManager(Factory):
         return p
 
     def loseConnection(self, c):
-        """ Unregister one of our connections. Must be called when connections close or die. """
+        """Unregister one of our connections. Must be called when connections close or die."""
 
         try:
             self.activeConnections.remove(c)
@@ -70,7 +70,7 @@ class CommandLinkManager(Factory):
             raise e
 
     def sendResponse(self, cmd, flag, response):
-        """ Ship a response off to all connections. """
+        """Ship a response off to all connections."""
 
         for c in self.activeConnections:
             try:
@@ -79,10 +79,11 @@ class CommandLinkManager(Factory):
                 raise e
 
 
-def listen(actor, port, interface=''):
-    """ Launch a manager listening on a given interface+port"""
+def listen(actor, port, interface=""):
+    """Launch a manager listening on a given interface+port"""
 
     from twisted.internet import reactor
+
     mgr = CommandLinkManager(actor)
     port = reactor.listenTCP(port, mgr, interface=interface)
     mgr.port = port
@@ -94,18 +95,17 @@ def main():
     from twisted.internet import reactor
 
     class DummyActor(object):
-
         def newCmd(self, cmd):
             cmd.respond('text="new Command: %s"' % (cmd))
 
     actor = DummyActor()
-    listen(actor, port=9999, interface='localhost')
+    listen(actor, port=9999, interface="localhost")
 
-    logging.info('starting reactor....')
+    logging.info("starting reactor....")
     reactor.run()
 
 
-'''
+"""
     c = CommandNub()
     c.lineReceived('')
     c.lineReceived('blat')
@@ -114,7 +114,7 @@ def main():
     c.lineReceived('ball. 10 abc def')
     c.lineReceived('ball 10 abc def')
     c.lineReceived('abc def')
-'''
+"""
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

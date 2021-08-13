@@ -8,105 +8,106 @@ def help(actorName, cmdName, vocab, keys, pageWidth=80, html=False, fullHelp=Tru
 
     cmds = [p for p in vocab if p[0] == cmdName]
     if not cmds:
-        return 'Unknown command %s' % cmdName
+        return "Unknown command %s" % cmdName
 
     allHelp = []
     for cmd in cmds:
         args = parse(cmd[1], keys)
         docstring = cmd[2].__doc__
         if docstring is None:
-            docstring = 'No documentation at all; bad, bad programmer.'
+            docstring = "No documentation at all; bad, bad programmer."
 
-        helpStr = ''
+        helpStr = ""
         if html:
-            helpStr += '<DT>%s %s' % (actorName, cmdName)
+            helpStr += "<DT>%s %s" % (actorName, cmdName)
         elif fullHelp:
-            helpStr += 'Usage: %s %s' % (actorName, cmdName)
+            helpStr += "Usage: %s %s" % (actorName, cmdName)
         else:
-            helpStr += '%s %s' % (actorName, cmdName)
+            helpStr += "%s %s" % (actorName, cmdName)
 
         for a in args:
-            if not html and len(helpStr.split('\n')[-1]) + len(str(a)) + 1 > pageWidth:
-                helpStr += '\n%s' % (len(cmd[0]) * ' ')
+            if not html and len(helpStr.split("\n")[-1]) + len(str(a)) + 1 > pageWidth:
+                helpStr += "\n%s" % (len(cmd[0]) * " ")
 
-            helpStr += ' %s' % (str(a))
+            helpStr += " %s" % (str(a))
         if html:
-            helpStr += '</DT>\n<DD>'
+            helpStr += "</DT>\n<DD>"
 
         if fullHelp:
-            helpStr += '\n'
-            helpStr += '\n%s' % (formatString(docstring.split('\n')[0], pageWidth))
+            helpStr += "\n"
+            helpStr += "\n%s" % (formatString(docstring.split("\n")[0], pageWidth))
         else:
-            helpStr += '\n    %s' % (docstring.split('\n')[0])
+            helpStr += "\n    %s" % (docstring.split("\n")[0])
 
         if fullHelp or html:
             if args:
                 if html:
-                    helpStr += '\n<TABLE>'
+                    helpStr += "\n<TABLE>"
                 else:
-                    helpStr += '\nArguments:'
+                    helpStr += "\nArguments:"
 
-                for a in sorted(args, lambda a, b: (a.name > b.name) - (a.name < b.name)):
+                for a in sorted(
+                    args, lambda a, b: (a.name > b.name) - (a.name < b.name)
+                ):
                     extra = None
                     for k in a.key:
                         extra = a.extraDescrip()
 
                         if html:
-                            lineFmt = ('\n<TR><TD>&nbsp;&nbsp;&nbsp;&nbsp;'
-                                       '</TD><TD>%s</TD><TD>%s</TD><TD>%s</TD></TR>')
+                            lineFmt = (
+                                "\n<TR><TD>&nbsp;&nbsp;&nbsp;&nbsp;"
+                                "</TD><TD>%s</TD><TD>%s</TD><TD>%s</TD></TR>"
+                            )
 
-                            helpStr += lineFmt % (k.name, k.help, '')
+                            helpStr += lineFmt % (k.name, k.help, "")
                         else:
-                            helpStr += '\n\t%-35s %s' % (k.name, k.help)
+                            helpStr += "\n\t%-35s %s" % (k.name, k.help)
 
                     if extra:
                         for e in extra:
                             if html:
-                                helpStr += lineFmt % ('', '', e)
+                                helpStr += lineFmt % ("", "", e)
                             else:
-                                helpStr += '\n\t%-35s            %s' % ('', e)
+                                helpStr += "\n\t%-35s            %s" % ("", e)
                 if html:
-                    helpStr += '\n</TABLE>'
+                    helpStr += "\n</TABLE>"
 
-            moreHelp = '\n'.join(docstring.split('\n')[1:])
+            moreHelp = "\n".join(docstring.split("\n")[1:])
             if moreHelp:
-                helpStr += '\n\n'
+                helpStr += "\n\n"
 
                 formatted = []
-                for para in re.split(r'\n\s*\n', moreHelp):
+                for para in re.split(r"\n\s*\n", moreHelp):
                     formatted.append(formatString(para, pageWidth))
 
-                helpStr += ('\n\n' + ('<P>' if html else '')).join(formatted)
+                helpStr += ("\n\n" + ("<P>" if html else "")).join(formatted)
 
         allHelp.append(helpStr)
 
-    return '\n'.join(allHelp)
+    return "\n".join(allHelp)
 
 
 class Cmd(object):
-
     def __init__(self, keys, name, optional, needsValue, alternates):
         self.name = name
         self.optional = optional
         self.needsValue = needsValue
         self.alternates = alternates
 
-        if name == '@raw':
+        if name == "@raw":
             self.key = []
         else:
-            names = name.split('|')
-            self.key = [keys.get(n.lower(), self.StrType(n, 'no help')) for n in names]
+            names = name.split("|")
+            self.key = [keys.get(n.lower(), self.StrType(n, "no help")) for n in names]
 
         self.__parseKeys()
 
     class StrType(object):
-
         def __init__(self, name, help):
             self.name = name
             self.help = help
 
     class Arg(object):
-
         def __init__(self, name, isArray=False):
             self.name = name
             self.isArray = isArray
@@ -124,44 +125,46 @@ class Cmd(object):
                 arg = Cmd.Arg(k.name, isArray)
             except BaseException:
                 kTypes = [Cmd.StrType]
-                arg = Cmd.Arg('anon', False)
+                arg = Cmd.Arg("anon", False)
 
             self.args.append(arg)
 
             for kt in kTypes:
                 if isinstance(kt, types.Bool):
-                    arg.values.append([kt, 'BOOL'])
+                    arg.values.append([kt, "BOOL"])
                 elif isinstance(kt, Cmd.StrType):
-                    arg.values.append([str, '|'.join([e.name for e in kt])])
+                    arg.values.append([str, "|".join([e.name for e in kt])])
                 elif isinstance(kt, types.Enum):
                     helpVals = [e[1] for e in kt.descriptors[1:]]
-                    arg.values.append([kt, '|'.join([e.split()[0] for e in helpVals]), helpVals])
+                    arg.values.append(
+                        [kt, "|".join([e.split()[0] for e in helpVals]), helpVals]
+                    )
                 elif isinstance(kt, types.Int):
-                    arg.values.append([kt, 'N'])
+                    arg.values.append([kt, "N"])
                 elif isinstance(kt, types.Float):
-                    arg.values.append([kt, 'FF.F'])
+                    arg.values.append([kt, "FF.F"])
                 elif isinstance(kt, types.String):
-                    arg.values.append([kt, "\"SSS\""])
+                    arg.values.append([kt, '"SSS"'])
                 else:
                     # import pdb; pdb.set_trace()
-                    arg.values.append([kt, '???'])
+                    arg.values.append([kt, "???"])
 
     def getArgs(self):
         if len(self.args) == 0:
-            return ''
+            return ""
         elif len(self.args) > 1:
-            print('XXXXXXXXXXXXX self.args = ', ' '.join([str(a) for a in self.args]))
+            print("XXXXXXXXXXXXX self.args = ", " ".join([str(a) for a in self.args]))
 
         a = self.args[0]
-        argVal = ''
+        argVal = ""
         for v in a.values:
             if argVal:
-                argVal += ', '
+                argVal += ", "
 
             argVal += v[1]
 
         if a.isArray:
-            argVal = '%s[, %s, ...]' % (argVal, argVal)
+            argVal = "%s[, %s, ...]" % (argVal, argVal)
 
         return argVal
 
@@ -170,46 +173,46 @@ class Cmd(object):
             kTypes = k.typedValues.vtypes
             isArray = True if len(kTypes) > 1 else False
 
-            argVal = ''
+            argVal = ""
             for kt in kTypes:
                 if argVal:
-                    argVal += ', '
+                    argVal += ", "
 
                 if isinstance(kt, types.Bool):
-                    argVal += 'BOOL'
+                    argVal += "BOOL"
                 elif isinstance(kt, types.Enum):
                     helpVals = [e[1] for e in kt.descriptors[1:]]
                     if enumHelp:
-                        argVal += '|'.join(['\t'.join(e.split()) for e in helpVals])
+                        argVal += "|".join(["\t".join(e.split()) for e in helpVals])
                     else:
-                        argVal += '|'.join([e.split()[0] for e in helpVals])
+                        argVal += "|".join([e.split()[0] for e in helpVals])
                 elif isinstance(kt, types.Int):
-                    argVal += 'N'
+                    argVal += "N"
                 elif isinstance(kt, types.Float):
-                    argVal += 'FF.F'
+                    argVal += "FF.F"
                 elif isinstance(kt, types.String):
-                    argVal += "\"SSS\""
+                    argVal += '"SSS"'
                 else:
                     # import pdb; pdb.set_trace()
-                    argVal += '???'
+                    argVal += "???"
 
             if isArray:
-                argVal = '%s[, %s, ...]' % (argVal, argVal)
+                argVal = "%s[, %s, ...]" % (argVal, argVal)
 
             return argVal
 
     def __str__(self):
-        argStr = ''
+        argStr = ""
         if self.optional:
-            argStr += '['
+            argStr += "["
 
         if not self.needsValue:
             argStr += self.name
         else:
-            argStr += '%s=%s' % (self.name, self.getArgs())
+            argStr += "%s=%s" % (self.name, self.getArgs())
 
         if self.optional:
-            argStr += ']'
+            argStr += "]"
 
         return argStr
 
@@ -229,19 +232,19 @@ def parse(argString, keys):
     args = []
     for a in argString.split():
         optional = False
-        mat = re.search(r'\[([^]]+)\]', a)
+        mat = re.search(r"\[([^]]+)\]", a)
         if mat:
             optional = True
             a = mat.group(1)
 
         needsValue = False
-        mat = re.search(r'<([^>]+)>', a)
+        mat = re.search(r"<([^>]+)>", a)
         if mat:
             needsValue = True
             a = mat.group(1)
 
         alternates = False
-        mat = re.search(r'@?\(([^)]+)\)', a)
+        mat = re.search(r"@?\(([^)]+)\)", a)
         if mat:
             alternates = True
             a = mat.group(1)
@@ -254,20 +257,20 @@ def parse(argString, keys):
 def formatString(para, pageWidth):
     """Format a string to have line lengths < pageWidth"""
 
-    para = ' '.join(para.split('\n')).lstrip()
+    para = " ".join(para.split("\n")).lstrip()
 
     outStr = []
-    outLine = ''
+    outLine = ""
     for word in para.split():
         if outLine and len(outLine) + len(word) + 1 > pageWidth:
             outStr.append(outLine)
-            outLine = ''
+            outLine = ""
 
         if outLine:
-            outLine += ' '
+            outLine += " "
         outLine += word
 
     if outLine:
         outStr.append(outLine)
 
-    return '\n'.join(outStr)
+    return "\n".join(outStr)

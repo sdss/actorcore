@@ -5,10 +5,10 @@ An ICC is a specialized actor with a controller that interfaces with a given
 instrument.
 """
 
-import os
 import imp
-import sys
 import logging
+import os
+import sys
 
 from opscore.utility.qstr import qstr
 from opscore.utility.sdss3logging import makeOpsFileLogger
@@ -17,13 +17,14 @@ import actorcore.Actor
 
 
 class ICC(actorcore.Actor.Actor):
-
-    def __init__(self,
-                 name,
-                 productName=None,
-                 configFile=None,
-                 productDir=None,
-                 makeCmdrConnection=True):
+    def __init__(
+        self,
+        name,
+        productName=None,
+        configFile=None,
+        productDir=None,
+        makeCmdrConnection=True,
+    ):
         """
         Create an ICC to communicate with an instrument.
 
@@ -38,69 +39,84 @@ class ICC(actorcore.Actor.Actor):
 
         """
 
-        actorcore.Actor.Actor.__init__(self,
-                                       name,
-                                       configFile=configFile,
-                                       productName=productName,
-                                       productDir=productDir,
-                                       makeCmdrConnection=makeCmdrConnection)
+        actorcore.Actor.Actor.__init__(
+            self,
+            name,
+            configFile=configFile,
+            productName=productName,
+            productDir=productDir,
+            makeCmdrConnection=makeCmdrConnection,
+        )
 
         # Create a separate logger for controller io
-        makeOpsFileLogger(os.path.join(self.logDir, 'io'), 'io')
-        self.iolog = logging.getLogger('io')
-        self.iolog.setLevel(int(self.config['logging']['ioLevel']))
+        makeOpsFileLogger(os.path.join(self.logDir, "io"), "io")
+        self.iolog = logging.getLogger("io")
+        self.iolog.setLevel(int(self.config["logging"]["ioLevel"]))
         self.iolog.propagate = False
 
     def attachController(self, name, path=None, cmd=None):
-        """ (Re-)load and attach a named set of commands. """
+        """(Re-)load and attach a named set of commands."""
 
         if path is None:
-            path = [os.path.join(self.product_dir, 'python', self.productName, 'Controllers')]
+            path = [
+                os.path.join(
+                    self.product_dir, "python", self.productName, "Controllers"
+                )
+            ]
 
         # import pdb; pdb.set_trace()
-        self.logger.info('attaching controller %s from path %s', name, path)
+        self.logger.info("attaching controller %s from path %s", name, path)
         file = None
         try:
             file, filename, description = imp.find_module(name, path)
-            self.logger.debug('controller file=%s filename=%s from path %s', file, filename, path)
+            self.logger.debug(
+                "controller file=%s filename=%s from path %s", file, filename, path
+            )
             mod = imp.load_module(name, file, filename, description)
-            self.logger.debug('load_module(%s, %s, %s, %s) = %08x', name, file, filename,
-                              description, id(mod))
+            self.logger.debug(
+                "load_module(%s, %s, %s, %s) = %08x",
+                name,
+                file,
+                filename,
+                description,
+                id(mod),
+            )
         except ImportError as e:
-            raise RuntimeError('Import of %s failed: %s' % (name, e))
+            raise RuntimeError("Import of %s failed: %s" % (name, e))
         finally:
             if file:
                 file.close()
 
         # Instantiate and save a new controller.
-        self.logger.info('creating new %s (%08x)', name, id(mod))
+        self.logger.info("creating new %s (%08x)", name, id(mod))
         conn = getattr(mod, name)(self, name)
 
         # If we loaded the module and the controller is already running, cleanly stop the old one.
         if name in self.controllers:
-            self.logger.info('stopping %s controller', name)
+            self.logger.info("stopping %s controller", name)
             self.controllers[name].stop()
             del self.controllers[name]
 
-        self.logger.info('starting %s controller', name)
+        self.logger.info("starting %s controller", name)
         try:
             conn.start()
         except Exception:
             print(sys.exc_info())
-            self.logger.error('Could not connect to %s', name)
+            self.logger.error("Could not connect to %s", name)
             return False
         self.controllers[name] = conn
         return True
 
     def attachAllControllers(self, path=None):
-        """ (Re-)load and (re-)connect to the hardware controllers listed in config:"icc".controllers.
-        """
+        """(Re-)load and (re-)connect to the hardware controllers listed in config:"icc".controllers."""
 
-        clist = eval(self.config[self.name]['controllers'])
-        self.logger.info('All controllers = %s', clist)
+        clist = eval(self.config[self.name]["controllers"])
+        self.logger.info("All controllers = %s", clist)
         for c in clist:
             if c not in self.allControllers:
-                self.bcast.warn('text=%s' % (qstr('cannot attach unknown controller %s' % (c))))
+                self.bcast.warn(
+                    "text=%s" % (qstr("cannot attach unknown controller %s" % (c)))
+                )
                 continue
             if not self.attachController(c, path):
                 self.bcast.warn('text="Could not connect to controller %s."' % (c))

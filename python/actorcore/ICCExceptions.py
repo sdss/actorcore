@@ -1,6 +1,7 @@
 import exceptions
 
-__all__ = ['ICCError', 'CmdError', 'CommError']
+
+__all__ = ["ICCError", "CmdError", "CommError"]
 
 
 class ICCError(exceptions.Exception):
@@ -13,7 +14,7 @@ class ICCError(exceptions.Exception):
     """
 
     def __init__(self, error, details=None):
-        """ Create an ICCError.
+        """Create an ICCError.
 
         Args:
            error   - one line of text, intended for users. Will be returned on text.
@@ -26,17 +27,17 @@ class ICCError(exceptions.Exception):
         if details:
             self.args = (error, details)
         else:
-            self.args = (error, )
+            self.args = (error,)
 
 
 class CmdError(exceptions.Exception):
-    """ A exception due to commands sent to the ICC. Anything can throw one, passing a one line
-        error message. The top-level event loop will close/cleanup/destroy any running command
-        and return the error message on text.
+    """A exception due to commands sent to the ICC. Anything can throw one, passing a one line
+    error message. The top-level event loop will close/cleanup/destroy any running command
+    and return the error message on text.
     """
 
     def __init__(self, error, details=None):
-        """ Create a CmdError.
+        """Create a CmdError.
 
         Args:
            error   - one line of text, intended for users. Will be returned on text.
@@ -49,7 +50,7 @@ class CmdError(exceptions.Exception):
         if details:
             self.args = (error, details)
         else:
-            self.args = (error, )
+            self.args = (error,)
 
 
 class CommError(exceptions.Exception):
@@ -62,14 +63,14 @@ class CommError(exceptions.Exception):
     """
 
     def __init__(self, device, error, details=None):
-        """ Create a CommError.
+        """Create a CommError.
 
         Args:
            device  - name of the device that had an error.
            error   - one line of text, intended for users. Will be returned on text.
            details - optional text, intended for operators/programmers.
                      Will be returned on debugText.
-       """
+        """
 
         self.device = device
         self.error = error

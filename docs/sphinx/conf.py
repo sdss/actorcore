@@ -5,46 +5,53 @@ import os
 import sys
 import urllib.request
 
+import sphinx_bootstrap_theme
 from pkg_resources import parse_version
 
-import sphinx_bootstrap_theme
 from actorcore import __version__
 
-sys.path.append(os.path.join(os.path.dirname(__file__), 'releases'))
+
+sys.path.append(os.path.join(os.path.dirname(__file__), "releases"))
 
 # import releases  # noqa
 
 
 # Are we building in RTD?
-on_rtd = os.environ.get('READTHEDOCS') == 'True'
+on_rtd = os.environ.get("READTHEDOCS") == "True"
 
 
 # matplotlib.use('agg')
 
 
-extensions = ['sphinx.ext.autodoc', 'sphinx.ext.napoleon', 'sphinx.ext.autosummary',
-              'sphinx.ext.todo', 'sphinx.ext.viewcode', 'sphinx.ext.mathjax',
-              'sphinx.ext.intersphinx']
+extensions = [
+    "sphinx.ext.autodoc",
+    "sphinx.ext.napoleon",
+    "sphinx.ext.autosummary",
+    "sphinx.ext.todo",
+    "sphinx.ext.viewcode",
+    "sphinx.ext.mathjax",
+    "sphinx.ext.intersphinx",
+]
 
 # Add any paths that contain templates here, relative to this directory.
-templates_path = ['_templates']
+templates_path = ["_templates"]
 
 # The suffix(es) of source filenames.
 # You can specify multiple suffix as a list of string:
 # source_suffix = ['.rst', '.md']
-source_suffix = '.rst'
+source_suffix = ".rst"
 
 source_parsers = {
     # '.md': 'recommonmark.parser.CommonMarkParser',
 }
 
 # The master toctree document.
-master_doc = 'index'
+master_doc = "index"
 
 # General information about the project.
-project = 'actorcore'
-copyright = '{0}, {1}'.format('2019', 'José Sánchez-Gallego')
-author = 'José Sánchez-Gallego'
+project = "actorcore"
+copyright = "{0}, {1}".format("2019", "José Sánchez-Gallego")
+author = "José Sánchez-Gallego"
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -65,11 +72,11 @@ language = None
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This patterns also effect to html_static_path and html_extra_path
-exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
+exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 
 # The reST default role (used for this markup: `text`) to use for all
 # documents.
-default_role = 'py:obj'
+default_role = "py:obj"
 
 # If true, '()' will be appended to :func: etc. cross-reference text.
 # add_function_parentheses = True
@@ -83,7 +90,7 @@ add_module_names = True
 # show_authors = False
 
 # The name of the Pygments (syntax highlighting) style to use.
-pygments_style = 'sphinx'
+pygments_style = "sphinx"
 
 # A list of ignored prefixes for module index sorting.
 # modindex_common_prefix = []
@@ -95,17 +102,14 @@ pygments_style = 'sphinx'
 todo_include_todos = False
 
 # Intersphinx mappings
-intersphinx_mapping = {'python': ('https://docs.python.org/3.7', None)}
+intersphinx_mapping = {"python": ("https://docs.python.org/3.7", None)}
 # 'astropy': ('http://docs.astropy.org/en/latest', None),
 # 'matplotlib': ('https://matplotlib.org/', None),
 # 'scipy': ('https://docs.scipy.org/doc/scipy/reference', None)}
 
-autodoc_mock_imports = ['_tkinter']
-autodoc_member_order = 'groupwise'
-autodoc_default_options = {
-    'members': None,
-    'show-inheritance': None
-}
+autodoc_mock_imports = ["_tkinter"]
+autodoc_member_order = "groupwise"
+autodoc_default_options = {"members": None, "show-inheritance": None}
 
 napoleon_use_rtype = False
 napoleon_use_ivar = True
@@ -119,7 +123,7 @@ rst_epilog = f"""
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
-html_theme = 'bootstrap'
+html_theme = "bootstrap"
 
 
 # Theme options are theme-specific and customize the look and feel of a theme
@@ -127,11 +131,9 @@ html_theme = 'bootstrap'
 # documentation.
 html_theme_options = {
     # Navigation bar title. (Default: ``project`` value)
-    'navbar_title': "SDSS: {0}".format(project),
-
+    "navbar_title": "SDSS: {0}".format(project),
     # Tab name for entire site. (Default: "Site")
     # 'navbar_site_name': "Site",
-
     # A list of tuples containing pages or urls to link to.
     # Valid tuples should be in the following forms:
     #    (name, page)                 # a link to a page
@@ -139,22 +141,16 @@ html_theme_options = {
     #    (name, "http://example.com", True) # arbitrary absolute url
     # Note the "1" or "True" value above as the third argument to indicate
     # an arbitrary url.
-    'navbar_links': [
-    ],
-
+    "navbar_links": [],
     # Render the next and previous page links in navbar. (Default: true)
-    'navbar_sidebarrel': False,
-
+    "navbar_sidebarrel": False,
     # Render the current pages TOC in the navbar. (Default: true)
-    'navbar_pagenav': True,
-
+    "navbar_pagenav": True,
     # Tab name for the current pages TOC. (Default: "Page")
-    'navbar_pagenav_name': "Page",
-
+    "navbar_pagenav_name": "Page",
     # Global TOC depth for "site" navbar tab. (Default: 1)
     # Switching to -1 shows all levels.
-    'globaltoc_depth': 2,
-
+    "globaltoc_depth": 2,
     # Include hidden TOCs in Site navbar?
     #
     # Note: If this is "false", you cannot have mixed ``:hidden:`` and
@@ -162,35 +158,30 @@ html_theme_options = {
     # will break.
     #
     # Values: "true" (default) or "false"
-    'globaltoc_includehidden': "true",
-
+    "globaltoc_includehidden": "true",
     # HTML navbar class (Default: "navbar") to attach to <div> element.
     # For black navbar, do "navbar navbar-inverse"
-    'navbar_class': "navbar",
-
+    "navbar_class": "navbar",
     # Fix navigation bar to top of page?
     # Values: "true" (default) or "false"
-    'navbar_fixed_top': "true",
-
+    "navbar_fixed_top": "true",
     # Location of link to source.
     # Options are "nav" (default), "footer" or anything else to exclude.
-    'source_link_position': "",
-
+    "source_link_position": "",
     # Bootswatch (http://bootswatch.com/) theme.
     #
     # Options are nothing (default) or the name of a valid theme
     # such as "amelia" or "cosmo".
-    'bootswatch_theme': "paper",
-
+    "bootswatch_theme": "paper",
     # Choose Bootstrap version.
     # Values: "3" (default) or "2" (in quotes)
-    'bootstrap_version': "3",
+    "bootstrap_version": "3",
 }
 
 # Add any paths that contain custom themes here, relative to this directory.
 html_theme_path = sphinx_bootstrap_theme.get_html_theme_path()
 
-html_favicon = './_static/favicon_sdssv.ico'
+html_favicon = "./_static/favicon_sdssv.ico"
 
 html_logo = "_static/sdssv_logo_small.png"
 
@@ -202,18 +193,24 @@ html_logo = "_static/sdssv_logo_small.png"
 if on_rtd:
     html_static_path = []
 else:
-    html_static_path = ['_static']
+    html_static_path = ["_static"]
 
 # Sidebar templates
-html_sidebars = {'**': ['localtoc.html']}
+html_sidebars = {"**": ["localtoc.html"]}
 
 
 def setup(app):
     """Downloads CAHNGELOG files from tron and opscore."""
 
-    urllib.request.urlretrieve('https://raw.githubusercontent.com/sdss/tron/master/CHANGELOG.rst',
-                               'changelog_tron.rst')
-    urllib.request.urlretrieve('https://raw.githubusercontent.com/sdss/opscore/master/CHANGELOG.rst',
-                               'changelog_opscore.rst')
-    urllib.request.urlretrieve('https://raw.githubusercontent.com/sdss/actorkeys/sdss5/CHANGELOG.rst',
-                               'changelog_actorkeys.rst')
+    urllib.request.urlretrieve(
+        "https://raw.githubusercontent.com/sdss/tron/master/CHANGELOG.rst",
+        "changelog_tron.rst",
+    )
+    urllib.request.urlretrieve(
+        "https://raw.githubusercontent.com/sdss/opscore/master/CHANGELOG.rst",
+        "changelog_opscore.rst",
+    )
+    urllib.request.urlretrieve(
+        "https://raw.githubusercontent.com/sdss/actorkeys/sdss5/CHANGELOG.rst",
+        "changelog_actorkeys.rst",
+    )

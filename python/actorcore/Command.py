@@ -7,18 +7,17 @@
 
 """
 
-__all__ = ['Command']
+__all__ = ["Command"]
 
 import logging
 
 
-cmdLogger = logging.getLogger('cmds')
+cmdLogger = logging.getLogger("cmds")
 
 
 class Command(object):
-
     def __init__(self, source, cmdr, cid, mid, rawCmd, debug=0, immortal=False):
-        """ Create a fully defined command:
+        """Create a fully defined command:
 
         source  - The input object which gets any responses.
         cmdr    - the name of the commander.
@@ -41,110 +40,120 @@ class Command(object):
         self.immortal = immortal
         self.debug = debug
 
-        cmdLogger.debug('New Command: %s' % (self))
+        cmdLogger.debug("New Command: %s" % (self))
 
     def __str__(self):
         if self.cmd:
-            cmdDescr = 'cmd=%s' % (self.cmd)
+            cmdDescr = "cmd=%s" % (self.cmd)
         else:
-            cmdDescr = 'rawCmd=%s' % (self.rawCmd)
+            cmdDescr = "rawCmd=%s" % (self.rawCmd)
 
-        return 'Command(source=%08x cmdr=%s cid=%s mid=%s %s)' % \
-               (id(self.source), self.cmdr, self.cid, self.mid, cmdDescr)
+        return "Command(source=%08x cmdr=%s cid=%s mid=%s %s)" % (
+            id(self.source),
+            self.cmdr,
+            self.cid,
+            self.mid,
+            cmdDescr,
+        )
 
     @property
     def program(self):
-        """ Return the program name component of the cmdr name. """
+        """Return the program name component of the cmdr name."""
 
         try:
-            parts = self.cmdr.split('.')
+            parts = self.cmdr.split(".")
             return parts[0]
         except BaseException:
-            cmdLogger.critical('failed to get programName from cmdrName %s' % (self.cmdr))
-            return ''
+            cmdLogger.critical(
+                "failed to get programName from cmdrName %s" % (self.cmdr)
+            )
+            return ""
 
     @property
     def username(self):
-        """ Return the username component of the cmdr name. """
+        """Return the username component of the cmdr name."""
 
         try:
-            parts = self.cmdr.split('.')
+            parts = self.cmdr.split(".")
             return parts[1]
         except BaseException:
-            cmdLogger.critical('failed to get username from cmdrName %s' % (self.cmdr))
-            return ''
+            cmdLogger.critical("failed to get username from cmdrName %s" % (self.cmdr))
+            return ""
 
     def isAlive(self):
-        """ Is this command still valid (i.e. no fail or finish sent)? """
+        """Is this command still valid (i.e. no fail or finish sent)?"""
 
         return self.alive
 
     def respond(self, response):
-        """ Return intermediate response. """
+        """Return intermediate response."""
 
-        self.__respond('i', response)
+        self.__respond("i", response)
 
     def inform(self, response):
-        """ Return intermediate response. """
+        """Return intermediate response."""
 
-        self.__respond('i', response)
+        self.__respond("i", response)
 
     def diag(self, response):
-        """ Return diagnostic output. """
+        """Return diagnostic output."""
 
-        self.__respond('d', response)
+        self.__respond("d", response)
 
     def warn(self, response):
-        """ Return warning. """
+        """Return warning."""
 
-        self.__respond('w', response)
+        self.__respond("w", response)
 
     def error(self, response):
-        """ Return intermediate error response. """
+        """Return intermediate error response."""
 
-        self.__respond('e', response)
+        self.__respond("e", response)
 
     def finish(self, response=None):
-        """ Return successful command finish. """
+        """Return successful command finish."""
 
         if response is None:
-            response = ''
+            response = ""
 
         if self.immortal:
-            self.__respond('i', response)
+            self.__respond("i", response)
         else:
-            self.__respond(':', response)
+            self.__respond(":", response)
             self.alive = False
 
     def fail(self, response):
-        """ Return failure. """
+        """Return failure."""
 
         if self.immortal:
-            self.__respond('e', response)
+            self.__respond("e", response)
         else:
-            self.__respond('f', response)
+            self.__respond("f", response)
             self.alive = False
 
     def sendResponse(self, flag, response):
-        """ Return a response with a specific flag. """
+        """Return a response with a specific flag."""
 
         self.__respond(flag, response)
 
     def __respond(self, flag, response):
-        """ Actually send the response to the appropriate source. If the command has already
-            been finished, try broadcasting a complaint. It is a bit unclear what to do about the
-            original response; I'm just passing it along to bother others. """
+        """Actually send the response to the appropriate source. If the command has already
+        been finished, try broadcasting a complaint. It is a bit unclear what to do about the
+        original response; I'm just passing it along to bother others."""
 
         if not self.alive:
             self.source.sendResponse(
-                self, 'w', 'text="this command has already been finished!!!! (%s %s): %s"' %
-                (self.cmdr, self.mid, self.rawCmd))
+                self,
+                "w",
+                'text="this command has already been finished!!!! (%s %s): %s"'
+                % (self.cmdr, self.mid, self.rawCmd),
+            )
         self.source.sendResponse(self, flag, response)
         # self.actor.bcast.warn(
         #     'text="sent a response to an already finished command: %s"' % (self))
 
     def coverArgs(self, requiredArgs, optionalArgs=None, ignoreFirst=None):
-        """ getopt, sort of.
+        """getopt, sort of.
 
         Args:
            requiredArgs     - list of words which must be matched.
@@ -191,7 +200,7 @@ class Command(object):
         # Walk down the argument list and categorize the arguments.
         #
         if ignoreFirst:
-            assert 0 == 1, 'ignoreFirst not implemented yet.'
+            assert 0 == 1, "ignoreFirst not implemented yet."
 
         for k, v in self.argDict.items():
             if k in requiredArgs:
@@ -206,11 +215,15 @@ class Command(object):
         return requiredMatches, requiredArgs, optionalMatches, leftovers
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
 
-    c = Command(1, 2, None, "tcmd arg1=v1 arg2=v2 arg3 arg4 arg5='v5' 3 3 5 acb=99", None)
+    c = Command(
+        1, 2, None, "tcmd arg1=v1 arg2=v2 arg3 arg4 arg5='v5' 3 3 5 acb=99", None
+    )
 
-    requiredMatches, requiredArgs, optionalMatches, leftovers = \
-        c.coverArgs(('arg1', 'xxx', 'arg4'), ('arg3', 'arg5', 'noarg'))
-    requiredMatches, requiredArgs, optionalMatches, leftovers = \
-        c.coverArgs(None, None, 'tcmd')
+    requiredMatches, requiredArgs, optionalMatches, leftovers = c.coverArgs(
+        ("arg1", "xxx", "arg4"), ("arg3", "arg5", "noarg")
+    )
+    requiredMatches, requiredArgs, optionalMatches, leftovers = c.coverArgs(
+        None, None, "tcmd"
+    )

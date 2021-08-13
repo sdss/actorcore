@@ -47,6 +47,7 @@ class Msg(object):
     Messages that an actor can pass to its threads.
     Subclass it and add more command types for your actor.
     """
+
     # Priorities
     CRITICAL = 0
     HIGH = 2
@@ -54,13 +55,13 @@ class Msg(object):
     NORMAL = 6
 
     # Command types; use classes so that the unique IDs are automatically generated
-    class EXIT():
+    class EXIT:
         pass
 
-    class DONE():
+    class DONE:
         pass
 
-    class REPLY():
+    class REPLY:
         pass
 
     def __init__(self, type, cmd, **data):
@@ -79,9 +80,9 @@ class Msg(object):
     def __repr__(self):
         values = []
         for k in self.__data:
-            values.append('{} : {}'.format(k, self.__getattribute__(k)))
+            values.append("{} : {}".format(k, self.__getattribute__(k)))
 
-        return '{}, {}: {{}}'.format(self.type.__name__, self.cmd, ', '.join(values))
+        return "{}, {}: {{{}}}".format(self.type.__name__, self.cmd, ", ".join(values))
 
     def __cmp__(self, rhs):
         """Used when sorting the messages in a priority queue"""
@@ -89,9 +90,8 @@ class Msg(object):
 
 
 class ModLoader(object):
-
     def load_module(self, fullpath, name):
-        """ Try to load a named module in the given path.
+        """Try to load a named module in the given path.
 
         The imp.find_module() docs give the following boring prescription:
 
@@ -101,20 +101,24 @@ class ModLoader(object):
           load_module() to find and load package P, and then use
           find_module() with the path argument set to P.__path__. When
           P itself has a dotted name, apply this recipe recursively.'
-         """
+        """
 
-        self.icclog.info('trying to load module path=%s name=%s', fullpath, name)
+        self.icclog.info("trying to load module path=%s name=%s", fullpath, name)
 
-        parts = fullpath.split('.')
+        parts = fullpath.split(".")
         path = None
         while len(parts) > 1:
             pname = parts[0]
             try:
-                self.icclog.debug('pre-loading path=%s pname=%s', path, pname)
+                self.icclog.debug("pre-loading path=%s pname=%s", path, pname)
                 file, filename, description = imp.find_module(pname, path)
 
-                self.icclog.debug('pre-loading package file=%s filename=%s description=%s', file,
-                                  filename, description)
+                self.icclog.debug(
+                    "pre-loading package file=%s filename=%s description=%s",
+                    file,
+                    filename,
+                    description,
+                )
                 mod = imp.load_module(pname, file, filename, description)
                 path = mod.__path__
                 parts = parts[1:]
@@ -124,11 +128,15 @@ class ModLoader(object):
                 file.close()
 
         try:
-            self.icclog.debug('trying to find path=%s class=%s', path, name)
+            self.icclog.debug("trying to find path=%s class=%s", path, name)
             file, filename, description = imp.find_module(name, path)
 
-            self.icclog.debug('trying to attach file=%s filename=%s description=%s', file,
-                              filename, description)
+            self.icclog.debug(
+                "trying to attach file=%s filename=%s description=%s",
+                file,
+                filename,
+                description,
+            )
             mod = imp.load_module(name, file, filename, description)
             return mod
         except ImportError as e:
@@ -144,7 +152,7 @@ class ActorState(object):
         self.actor = actor
         # NOTE: getattr is for running unittests;
         # we don't create the Cmdr connection, so can't get its dispatcher.
-        self.dispatcher = getattr(self.actor.cmdr, 'dispatcher', None)
+        self.dispatcher = getattr(self.actor.cmdr, "dispatcher", None)
         if models is None:
             models = {}
         self.models = models
@@ -154,18 +162,19 @@ class ActorState(object):
         self.timeout = 10
 
     def __str__(self):
-        msg = '{} {}'.format(self.actor, self.actor.cmdr.dispatcher)
+        msg = "{} {}".format(self.actor, self.actor.cmdr.dispatcher)
         return msg
 
 
 class Actor(object):
-
-    def __init__(self,
-                 name,
-                 productName=None,
-                 productDir=None,
-                 configFile=None,
-                 makeCmdrConnection=True):
+    def __init__(
+        self,
+        name,
+        productName=None,
+        productDir=None,
+        configFile=None,
+        makeCmdrConnection=True,
+    ):
         """
         Create an Actor.
 
@@ -189,23 +198,31 @@ class Actor(object):
         self.product_dir = product_dir_name
 
         if not self.product_dir:
-            raise RuntimeError('environment variable %s must be defined' % (product_dir_name))
+            raise RuntimeError(
+                "environment variable %s must be defined" % (product_dir_name)
+            )
 
-        self.configFile = configFile or os.path.join(self.product_dir, f'etc/{self.name}.yaml')
+        self.configFile = configFile or os.path.join(
+            self.product_dir, f"etc/{self.name}.yaml"
+        )
 
         self.read_config_files()
 
         self.configureLogs()
 
-        self.logger.info('%s starting up....' % (name))
+        self.logger.info("%s starting up...." % (name))
         self.parser = CommandParser()
 
         # The list of all connected sources.
-        tronInterface = self.config['tron']['interface'] or ''
-        tronPort = self.config['tron']['port']
-        self.commandSources = cmdLinkManager.listen(self, port=tronPort, interface=tronInterface)
+        tronInterface = self.config["tron"]["interface"] or ""
+        tronPort = self.config["tron"]["port"]
+        self.commandSources = cmdLinkManager.listen(
+            self, port=tronPort, interface=tronInterface
+        )
         # The Command which we send uncommanded output to.
-        self.bcast = actorCmd.Command(self.commandSources, 'self.0', 0, 0, None, immortal=True)
+        self.bcast = actorCmd.Command(
+            self.commandSources, "self.0", 0, 0, None, immortal=True
+        )
 
         # IDs to send commands to ourself.
         self.selfCID = self.commandSources.fetchCid()
@@ -217,12 +234,12 @@ class Actor(object):
         # can find the others.
         self.commandSets = {}
 
-        self.logger.info('Creating validation handler...')
+        self.logger.info("Creating validation handler...")
         self.handler = validation.CommandHandler()
 
-        self.logger.info('Attaching actor command sets...')
+        self.logger.info("Attaching actor command sets...")
         self.attachAllCmdSets()
-        self.logger.info('All command sets attached...')
+        self.logger.info("All command sets attached...")
 
         self.commandQueue = queue.Queue()
         self.shuttingDown = False
@@ -239,84 +256,87 @@ class Actor(object):
 
         # Missing config bits should make us blow up.
         self.configFile = os.path.expandvars(self.configFile)
-        logging.warn('reading config file %s', self.configFile)
+        logging.warn("reading config file %s", self.configFile)
 
         self.config = yaml.full_load(open(self.configFile))
 
     def configureLogs(self, cmd=None):
-        """ (re-)configure our logs. """
+        """(re-)configure our logs."""
 
-        self.logDir = self.config['logging']['logdir']
-        assert self.logDir, 'logdir must be set!'
+        self.logDir = self.config["logging"]["logdir"]
+        assert self.logDir, "logdir must be set!"
 
         # Make the root logger go to a rotating file. All others derive from this.
         setupRootLogger(self.logDir)
 
         # The real stderr/console filtering is actually done through the console Handler.
         try:
-            consoleLevel = int(self.config['logging']['consoleLevel'])
+            consoleLevel = int(self.config["logging"]["consoleLevel"])
         except BaseException:
-            consoleLevel = int(self.config['logging']['baseLevel'])
+            consoleLevel = int(self.config["logging"]["baseLevel"])
         setConsoleLevel(consoleLevel)
 
         # self.console needs to be renamed ore deleted, I think.
-        self.console = logging.getLogger('')
-        self.console.setLevel(int(self.config['logging']['baseLevel']))
+        self.console = logging.getLogger("")
+        self.console.setLevel(int(self.config["logging"]["baseLevel"]))
 
-        self.logger = logging.getLogger('actor')
-        self.logger.setLevel(int(self.config['logging']['baseLevel']))
+        self.logger = logging.getLogger("actor")
+        self.logger.setLevel(int(self.config["logging"]["baseLevel"]))
         self.logger.propagate = True
-        self.logger.info('(re-)configured root and actor logs')
+        self.logger.info("(re-)configured root and actor logs")
 
-        self.cmdLog = logging.getLogger('cmds')
-        self.cmdLog.setLevel(int(self.config['logging']['cmdLevel']))
+        self.cmdLog = logging.getLogger("cmds")
+        self.cmdLog.setLevel(int(self.config["logging"]["cmdLevel"]))
         self.cmdLog.propagate = True
-        self.cmdLog.info('(re-)configured cmds log')
+        self.cmdLog.info("(re-)configured cmds log")
 
         if cmd:
             cmd.inform('text="reconfigured logs"')
 
     def versionString(self, cmd):
-        """ Return the version key value.
+        """Return the version key value.
 
         If you simply want to generate the keyword, call .sendVersionKey().
 
         """
 
-        if hasattr(self, 'version'):
+        if hasattr(self, "version"):
             version = self.version
         else:
-            version = 'unknown'
+            version = "unknown"
 
-        if version == 'unknown' or version == '':
+        if version == "unknown" or version == "":
             cmd.warn("text='pathetic version string: %s'" % (version))
 
         return version
 
     def sendVersionKey(self, cmd):
-        """ Generate the version keyword in response to cmd. """
+        """Generate the version keyword in response to cmd."""
 
         version = self.versionString(cmd)
-        cmd.inform('version=%s' % (qstr(version)))
+        cmd.inform("version=%s" % (qstr(version)))
 
     def triggerHubConnection(self):
-        """ Send the hub a command to connect back to us. """
+        """Send the hub a command to connect back to us."""
 
         if not self.cmdr:
-            self.bcast.warn('text="CANNOT ask hub to connect to us, '
-                            'since we do not have a connection to it yet!"')
+            self.bcast.warn(
+                'text="CANNOT ask hub to connect to us, '
+                'since we do not have a connection to it yet!"'
+            )
             return
 
-        self.bcast.warn('%s is asking the hub to connect back to us' % (self.name))
+        self.bcast.warn("%s is asking the hub to connect back to us" % (self.name))
         self.cmdr.dispatcher.executeCmd(
-            opscore.actor.keyvar.CmdVar(actor='hub',
-                                        cmdStr='startNubs %s' % (self.name),
-                                        timeLim=5.0))
+            opscore.actor.keyvar.CmdVar(
+                actor="hub", cmdStr="startNubs %s" % (self.name), timeLim=5.0
+            )
+        )
 
     def _connectionMade(self):
-        """ twisted arranges to call this when self.cmdr has been established. """
+        """twisted arranges to call this when self.cmdr has been established."""
 
-        self.bcast.warn('%s is connected to the hub.' % (self.name))
+        self.bcast.warn("%s is connected to the hub." % (self.name))
 
         #
         # Request that tron connect to us.
@@ -325,25 +345,26 @@ class Actor(object):
         self.connectionMade()
 
     def connectionMade(self):
-        """ For overriding. """
+        """For overriding."""
         pass
 
     def attachCmdSet(self, cname, path=None):
-        """ (Re-)load and attach a named set of commands. """
+        """(Re-)load and attach a named set of commands."""
 
         if path is None:
-            path = [os.path.join(self.product_dir, 'Commands')]
+            path = [os.path.join(self.product_dir, "Commands")]
 
-        self.logger.info('attaching command set %s from path %s', cname, path)
+        self.logger.info("attaching command set %s from path %s", cname, path)
 
         file = None
         try:
             file, filename, description = imp.find_module(cname, path)
-            self.logger.debug('command set file=%s filename=%s from path %s',
-                              file, filename, path)
+            self.logger.debug(
+                "command set file=%s filename=%s from path %s", file, filename, path
+            )
             mod = imp.load_module(cname, file, filename, description)
         except ImportError as e:
-            raise RuntimeError('Import of %s failed: %s' % (cname, e))
+            raise RuntimeError("Import of %s failed: %s" % (cname, e))
         finally:
             if file:
                 file.close()
@@ -359,14 +380,14 @@ class Actor(object):
         # BAD problem here: the Keys define a single namespace. We need
         # to check for conflicts and allow unloading. Right now we unilaterally
         # load the Keys and do not unload them if the validation fails.
-        if hasattr(cmdSet, 'keys') and cmdSet.keys:
+        if hasattr(cmdSet, "keys") and cmdSet.keys:
             keys.CmdKey.addKeys(cmdSet.keys)
         valCmds = []
         for v in cmdSet.vocab:
             try:
                 verb, args, func = v
             except ValueError:
-                raise RuntimeError('vocabulary word needs three parts: %s' % (v))
+                raise RuntimeError("vocabulary word needs three parts: %s" % (v))
 
             # Check that the function exists and get its help.
             funcDoc = inspect.getdoc(func)
@@ -383,26 +404,25 @@ class Actor(object):
             self.handler.removeConsumers(*oldCmdSet.validatedCmds)
         self.handler.addConsumers(*cmdSet.validatedCmds)
 
-        self.logger.debug('handler verbs: %s' % (list(self.handler.consumers.keys())))
+        self.logger.debug("handler verbs: %s" % (list(self.handler.consumers.keys())))
 
     def attachAllCmdSets(self, path=None):
-        """ (Re-)load all command classes -- files in ./Command which end with Cmd.py.
-        """
+        """(Re-)load all command classes -- files in ./Command which end with Cmd.py."""
 
         if path is None:
             self.attachAllCmdSets(
-                path=os.path.join(os.path.dirname(__file__), 'Commands'))
-            self.attachAllCmdSets(
-                path=os.path.join(self.product_dir, 'Commands'))
+                path=os.path.join(os.path.dirname(__file__), "Commands")
+            )
+            self.attachAllCmdSets(path=os.path.join(self.product_dir, "Commands"))
             return
 
         dirlist = sorted(os.listdir(path))
-        self.logger.info('loading %s' % (dirlist))
+        self.logger.info("loading %s" % (dirlist))
 
         for f in dirlist:
-            if os.path.isdir(f) and not f.startswith('.'):
+            if os.path.isdir(f) and not f.startswith("."):
                 self.attachAllCmdSets(path=f)
-            if re.match(r'^[a-zA-Z][a-zA-Z0-9_-]*Cmd\.py$', f):
+            if re.match(r"^[a-zA-Z][a-zA-Z0-9_-]*Cmd\.py$", f):
                 self.attachCmdSet(f[:-3], [path])
 
     def cmdTraceback(self, e):
@@ -410,49 +430,65 @@ class Actor(object):
         tbList = traceback.extract_tb(eTraceback)
         where = tbList[-1]
 
-        return '%r at %s:%d' % (eValue, where[0], where[1])
+        return "%r at %s:%d" % (eValue, where[0], where[1])
 
     def runActorCmd(self, cmd):
         try:
             cmdStr = cmd.rawCmd
-            self.cmdLog.debug('raw cmd: %s' % (cmdStr))
+            self.cmdLog.debug("raw cmd: %s" % (cmdStr))
 
             try:
                 validatedCmd, cmdFuncs = self.handler.match(cmdStr)
             except Exception as e:
-                cmd.fail('text=%s' % (qstr('Unmatched command: %s (exception: %s)' % (cmdStr, e))))
+                cmd.fail(
+                    "text=%s"
+                    % (qstr("Unmatched command: %s (exception: %s)" % (cmdStr, e)))
+                )
                 # tback('actor_loop', e)
                 return
 
             if not validatedCmd:
-                cmd.fail('text=%s' % (qstr('Unrecognized command: %s' % (cmdStr))))
+                cmd.fail("text=%s" % (qstr("Unrecognized command: %s" % (cmdStr))))
                 return
 
-            self.cmdLog.info('< %s:%d %s' % (cmd.cmdr, cmd.mid, validatedCmd))
+            self.cmdLog.info("< %s:%d %s" % (cmd.cmdr, cmd.mid, validatedCmd))
             if len(cmdFuncs) > 1:
-                cmd.warn('text=%s' % (qstr('command has more than one callback (%s): %s' %
-                                           (cmdFuncs, validatedCmd))))
+                cmd.warn(
+                    "text=%s"
+                    % (
+                        qstr(
+                            "command has more than one callback (%s): %s"
+                            % (cmdFuncs, validatedCmd)
+                        )
+                    )
+                )
             try:
                 cmd.cmd = validatedCmd
                 for func in cmdFuncs:
                     func(cmd)
             except Exception as e:
                 oneLiner = self.cmdTraceback(e)
-                cmd.fail('text=%s' % (qstr('command failed: %s' % (oneLiner))))
+                cmd.fail("text=%s" % (qstr("command failed: %s" % (oneLiner))))
                 # tback('newCmd', e)
                 return
 
         except Exception as e:
-            cmd.fail('text=%s' %
-                     (qstr('completely unexpected exception when processing a new command: %s' %
-                           (e))))
+            cmd.fail(
+                "text=%s"
+                % (
+                    qstr(
+                        "completely unexpected exception when processing a new command: %s"
+                        % (e)
+                    )
+                )
+            )
             try:
-                tback('newCmdFail', e)
+                tback("newCmdFail", e)
             except BaseException:
                 pass
 
     def actor_loop(self):
-        """ Check the command queue and dispatch commands."""
+        """Check the command queue and dispatch commands."""
 
         while True:
             try:
@@ -465,17 +501,17 @@ class Actor(object):
             self.runActorCmd(cmd)
 
     def commandFailed(self, cmd):
-        """ Gets called when a command has failed. """
+        """Gets called when a command has failed."""
         pass
 
     def newCmd(self, cmd):
-        """ Dispatch a newly received command. """
+        """Dispatch a newly received command."""
 
-        self.cmdLog.info('new cmd: %s' % (cmd))
+        self.cmdLog.info("new cmd: %s" % (cmd))
 
         # Empty cmds are OK; send an empty response...
         if len(cmd.rawCmd) == 0:
-            cmd.finish('')
+            cmd.finish("")
             return None
 
         if self.runInReactorThread:
@@ -486,13 +522,15 @@ class Actor(object):
         return self
 
     def callCommand(self, cmdStr):
-        """ Send ourselves a command. """
+        """Send ourselves a command."""
 
-        cmd = actorCmd.Command(self.commandSources,
-                               'self.%d' % (self.selfCID),
-                               cid=self.selfCID,
-                               mid=self.synthMID,
-                               rawCmd=cmdStr)
+        cmd = actorCmd.Command(
+            self.commandSources,
+            "self.%d" % (self.selfCID),
+            cid=self.selfCID,
+            mid=self.synthMID,
+            rawCmd=cmdStr,
+        )
         self.synthMID += 1
         self.newCmd(cmd)
 
@@ -500,23 +538,25 @@ class Actor(object):
         self.shuttingDown = True
 
     def run(self, doReactor=True):
-        """ Actually run the twisted reactor. """
+        """Actually run the twisted reactor."""
         try:
-            self.runInReactorThread = self.config[self.name]['runInReactorThread']
+            self.runInReactorThread = self.config[self.name]["runInReactorThread"]
         except BaseException:
             self.runInReactorThread = False
 
-        self.logger.info('starting reactor (in own thread=%s)....' % (not self.runInReactorThread))
+        self.logger.info(
+            "starting reactor (in own thread=%s)...." % (not self.runInReactorThread)
+        )
         try:
             if not self.runInReactorThread:
                 threading.Thread(target=self.actor_loop).start()
             if doReactor:
                 reactor.run()
         except Exception as e:
-            tback('run', e)
+            tback("run", e)
 
         if doReactor:
-            self.logger.info('reactor dead, cleaning up...')
+            self.logger.info("reactor dead, cleaning up...")
             self._shutdown()
 
 
@@ -542,21 +582,21 @@ class SDSSActor(Actor, metaclass=abc.ABCMeta):
     def determine_location(location=None):
         """Returns location based on the domain name or ``$OBSERVATORY``."""
 
-        location = location or os.environ.get('OBSERVATORY', None)
+        location = location or os.environ.get("OBSERVATORY", None)
 
         if location is None:
-            fqdn = socket.getfqdn().split('.')
+            fqdn = socket.getfqdn().split(".")
         else:
             location = location.upper()
-            assert location in ['APO', 'LCO', 'LOCAL'], 'invalid location'
+            assert location in ["APO", "LCO", "LOCAL"], "invalid location"
             return location
 
-        if 'apo' in fqdn:
-            return 'APO'
-        elif 'lco' in fqdn:
-            return 'LCO'
-        elif 'ACTORCORE_LOCAL' in os.environ and os.environ['ACTORCORE_LOCAL'] == '1':
-            return 'LOCAL'
+        if "apo" in fqdn:
+            return "APO"
+        elif "lco" in fqdn:
+            return "LCO"
+        elif "ACTORCORE_LOCAL" in os.environ and os.environ["ACTORCORE_LOCAL"] == "1":
+            return "LOCAL"
         else:
             return None
 
@@ -565,20 +605,21 @@ class SDSSActor(Actor, metaclass=abc.ABCMeta):
 
         super(SDSSActor, self).read_config_files()
 
-        if 'SDSSCORE_DIR' not in os.environ:
-            logging.warn('cannot find SDSSCORE_DIR.')
+        if "SDSSCORE_DIR" not in os.environ:
+            logging.warn("cannot find SDSSCORE_DIR.")
             return
 
-        sdsscore_config_file = os.path.join(os.environ['SDSSCORE_DIR'],
-                                            f'configuration_files/actors/{self.name}.yaml')
+        sdsscore_config_file = os.path.join(
+            os.environ["SDSSCORE_DIR"], f"configuration_files/actors/{self.name}.yaml"
+        )
 
         if not os.path.exists(sdsscore_config_file):
-            logging.warn(f'cannot find {sdsscore_config_file}.')
+            logging.warn(f"cannot find {sdsscore_config_file}.")
             return
 
         sdsscore_config = yaml.full_load(open(sdsscore_config_file))
 
-        use_location = sdsscore_config.pop('use_location', False)
+        use_location = sdsscore_config.pop("use_location", False)
 
         if not use_location:
 
@@ -592,13 +633,17 @@ class SDSSActor(Actor, metaclass=abc.ABCMeta):
                 location_section = sdsscore_config.get(self.location.lower(), None)
 
             if location_section is None:
-                logging.warn(f'cannot find section for location '
-                             f'{self.location} in {sdsscore_config_file}.')
+                logging.warn(
+                    f"cannot find section for location "
+                    f"{self.location} in {sdsscore_config_file}."
+                )
                 return
 
             self.config = merge_config(location_section, self.config)
 
-        logging.warn(f'loaded {self.location} configuration from {sdsscore_config_file}.')
+        logging.warn(
+            f"loaded {self.location} configuration from {sdsscore_config_file}."
+        )
 
     def attachAllCmdSets(self, path=None):
         """
@@ -610,10 +655,12 @@ class SDSSActor(Actor, metaclass=abc.ABCMeta):
 
         if path is not None:
             dirlist = sorted(os.listdir(path))
-            self.logger.info('loading %s' % (dirlist))
+            self.logger.info("loading %s" % (dirlist))
 
             for f in dirlist:
-                if re.match(r'^[a-zA-Z][a-zA-Z0-9_-]*Cmd_{}\.py$'.format(self.location), f):
+                if re.match(
+                    r"^[a-zA-Z][a-zA-Z0-9_-]*Cmd_{}\.py$".format(self.location), f
+                ):
                     self.attachCmdSet(f[:-3], [path])
 
     def run(self, Msg=None, startThreads=True, doReactor=True, queueClass=None):
@@ -634,27 +681,33 @@ class SDSSActor(Actor, metaclass=abc.ABCMeta):
             queueClass = queue.Queue
 
         if Msg is not None:
-            self.startThreads(Msg, restartQueues=True, restart=False, queueClass=queueClass)
+            self.startThreads(
+                Msg, restartQueues=True, restart=False, queueClass=queueClass
+            )
 
         try:
-            self.runInReactorThread = self.config[self.name]['runInReactorThread']
+            self.runInReactorThread = self.config[self.name]["runInReactorThread"]
         except BaseException:
             self.runInReactorThread = False
 
-        self.logger.info('starting reactor (in own thread=%s)....' % (not self.runInReactorThread))
+        self.logger.info(
+            "starting reactor (in own thread=%s)...." % (not self.runInReactorThread)
+        )
         try:
             if not self.runInReactorThread:
                 threading.Thread(target=self.actor_loop).start()
             if doReactor:
                 reactor.run()
         except Exception as e:
-            tback('run', e)
+            tback("run", e)
 
         if doReactor:
-            self.logger.info('reactor dead, cleaning up...')
+            self.logger.info("reactor dead, cleaning up...")
             self._shutdown()
 
-    def startThreads(self, Msg, cmd=None, restart=False, restartQueues=False, queueClass=None):
+    def startThreads(
+        self, Msg, cmd=None, restart=False, restartQueues=False, queueClass=None
+    ):
         """
         Start or restart the worker threads (from self.threadList) and queues.
 
@@ -674,7 +727,7 @@ class SDSSActor(Actor, metaclass=abc.ABCMeta):
         """
         actorState = self.actorState
 
-        if getattr(actorState, 'threads', None) is None:
+        if getattr(actorState, "threads", None) is None:
             restart = False  # nothing to restart!
 
         if not restart:
@@ -689,20 +742,24 @@ class SDSSActor(Actor, metaclass=abc.ABCMeta):
                 n = int(g.group(2))
             except TypeError:
                 n = 0
-            return '%s-%d' % (g.group(1), n + 1)
+            return "%s-%d" % (g.group(1), n + 1)
 
         newQueues = {}
         threadsToStart = []
         for tname, tid, thread in self.threadList:
 
             if queueClass is None or queueClass is queue.Queue:
-                newQueues[tid] = queue.Queue(0) if restartQueues else actorState.queues[tid]
+                newQueues[tid] = (
+                    queue.Queue(0) if restartQueues else actorState.queues[tid]
+                )
             else:
                 # If queueClass is custom, we assume it comes from SOP, whose queue require to
                 # pass the tname as the first argument.
                 # TODO: this is ugly and has already caused problems. We should find a better
                 # solution.
-                newQueues[tid] = queueClass(tname, 0) if restartQueues else actorState.queues[tid]
+                newQueues[tid] = (
+                    queueClass(tname, 0) if restartQueues else actorState.queues[tid]
+                )
 
             if inspect.ismodule(thread):
                 threadTarget = thread.main
@@ -715,7 +772,9 @@ class SDSSActor(Actor, metaclass=abc.ABCMeta):
                 importlib.reload(threadModule)
 
                 for t in threading.enumerate():
-                    if re.search(r'^%s(-\d+)?$' % tname, t.name):  # a thread of the proper type
+                    if re.search(
+                        r"^%s(-\d+)?$" % tname, t.name
+                    ):  # a thread of the proper type
                         actorState.queues[tid].flush()
                         actorState.queues[tid].put(Msg(Msg.EXIT, cmd=cmd))
 
@@ -724,11 +783,13 @@ class SDSSActor(Actor, metaclass=abc.ABCMeta):
                             if cmd:
                                 cmd.inform('text="Failed to kill %s"' % tname)
 
-                tname = re.sub(r'^([^\d]*)(?:-(\d*))?$', updateName, actorState.threads[tid].name)
+                tname = re.sub(
+                    r"^([^\d]*)(?:-(\d*))?$", updateName, actorState.threads[tid].name
+                )
 
-            actorState.threads[tid] = threading.Thread(target=threadTarget,
-                                                       name=tname,
-                                                       args=[actorState.actor, newQueues])
+            actorState.threads[tid] = threading.Thread(
+                target=threadTarget, name=tname, args=[actorState.actor, newQueues]
+            )
             actorState.threads[tid].daemon = True
 
             threadsToStart.append(actorState.threads[tid])

@@ -14,10 +14,10 @@ import socket
 import sys
 
 import pytest
-
 from stagemanager.stagemanager import StageManager
 
-actors = ['sopActor']
+
+actors = ["sopActor"]
 
 
 @pytest.fixture(params=actors)
@@ -25,26 +25,26 @@ def actor(request):
     return request.param
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def ishub():
-    hubhost = 'hub' in socket.gethostname()
-    sdssuser = 'sdss' in os.environ.get('USER', None)
+    hubhost = "hub" in socket.gethostname()
+    sdssuser = "sdss" in os.environ.get("USER", None)
     return all([hubhost, sdssuser])
 
 
 @pytest.fixture()
 def unload(actor, monkeypatch):
-    actorpath = '{0}_DIR'.format(actor.upper())
+    actorpath = "{0}_DIR".format(actor.upper())
     monkeypatch.delenv(actorpath)
     syscopy = copy.deepcopy(sys.path)
-    monkeypatch.setattr(sys, 'path', syscopy)
+    monkeypatch.setattr(sys, "path", syscopy)
     pypath = [item for item in sys.path if actor in item]
     sys.path.remove(pypath[0])
 
 
 @pytest.fixture()
 def sm(actor, ishub, tmpdir):
-    logdir = str(tmpdir.mkdir('logs'))
+    logdir = str(tmpdir.mkdir("logs"))
     if ishub:
         sm = StageManager(actor=actor, logdir=logdir)
     else:
