@@ -7,16 +7,6 @@ Change Log
 This document records the main changes to the actorcore code.
 
 
-.. _actorcore-5.0.0:
-
-5.0.0 (unreleased)
-------------------
-
-Support
-^^^^^^^
-* Modify to work with Python 3 (only). Removed SVN tools. Refactored FITS tools to work with ``astropy``.
-
-
 .. _actorcore-v4_1_8:
 
 v4_1_8 (2019-10-09)
