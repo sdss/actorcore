@@ -1,5 +1,12 @@
 # Changelog
 
+## 5.0.2 (2021-08-21)
+
+### 🔧 Fixed
+
+* Packaging was not including subdirectories in `actorcore`.
+
+
 ## 5.0.1 (2021-08-21)
 
 ### ✨ Improved
