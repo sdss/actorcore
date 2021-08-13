@@ -32,8 +32,9 @@ class CommandLink(LineReceiver):
         re.IGNORECASE | re.VERBOSE,
     )
 
-    def __init__(self, brains, connID, eol=b"\n"):
-        """Receives what should be atomic commands, parses them, and passes them on."""
+    def __init__(self, brains, connID, eol=b'\n'):
+        """ Receives what should be atomic commands, parses them, and passes them on.
+        """
         # LineReceiver.__init__(self) # How can they live without?
 
         self.brains = brains

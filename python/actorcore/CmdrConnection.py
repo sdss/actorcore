@@ -20,7 +20,7 @@ class CmdrConnection(LineReceiver):
     def __init__(self, readCallback, brains, logger=None, **argv):
         """The Commander twisted Protocol: sends command lines and passes on replies."""
 
-        self.delimiter = b"\n"
+        self.delimiter = b'\n'
         self.readCallback = readCallback
         self.brains = brains
         self.lock = threading.Lock()
@@ -50,7 +50,11 @@ class CmdrConnection(LineReceiver):
            replyStr   - the new reply line.
         """
 
+<<<<<<< HEAD
         self.logger.debug("read: " + replyStr)
+=======
+        self.logger.debug('read: ' + replyStr.decode())
+>>>>>>> 623286e (Use bytes for EOL)
         self.readCallback(self.transport, replyStr)
 
 
