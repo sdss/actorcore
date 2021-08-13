@@ -23,7 +23,7 @@ class CmdrConnection(LineReceiver):
         """ The Commander twisted Protocol: sends command lines and passes on replies.
         """
 
-        self.delimiter = '\n'
+        self.delimiter = b'\n'
         self.readCallback = readCallback
         self.brains = brains
         self.lock = threading.Lock()
@@ -53,7 +53,7 @@ class CmdrConnection(LineReceiver):
            replyStr   - the new reply line.
         """
 
-        self.logger.debug('read: ' + replyStr)
+        self.logger.debug('read: ' + replyStr.decode())
         self.readCallback(self.transport, replyStr)
 
 
