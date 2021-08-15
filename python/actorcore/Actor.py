@@ -25,7 +25,6 @@ import sys
 import threading
 import traceback
 
-import yaml
 from twisted.internet import reactor
 
 import opscore
@@ -35,8 +34,7 @@ from opscore.protocols.parser import CommandParser
 from opscore.utility.qstr import qstr
 from opscore.utility.sdss3logging import setConsoleLevel, setupRootLogger
 from opscore.utility.tback import tback
-
-from actorcore.utility.configuration import merge_config
+from sdsstools import read_yaml_file
 
 from . import CmdrConnection
 from . import Command as actorCmd
@@ -260,7 +258,7 @@ class Actor(object):
         self.configFile = os.path.expandvars(self.configFile)
         logging.warn("reading config file %s", self.configFile)
 
-        self.config = yaml.full_load(open(self.configFile))
+        self.config = read_yaml_file(self.configFile)
 
     def configureLogs(self, cmd=None):
         """(re-)configure our logs."""
@@ -602,51 +600,6 @@ class SDSSActor(Actor, metaclass=abc.ABCMeta):
             return "LOCAL"
         else:
             return None
-
-    def read_config_files(self):
-        """Overrides internal configuration with the one found in sdsscore."""
-
-        super(SDSSActor, self).read_config_files()
-
-        if "SDSSCORE_DIR" not in os.environ:
-            logging.warn("cannot find SDSSCORE_DIR.")
-            return
-
-        sdsscore_config_file = os.path.join(
-            os.environ["SDSSCORE_DIR"], f"configuration_files/actors/{self.name}.yaml"
-        )
-
-        if not os.path.exists(sdsscore_config_file):
-            logging.warn(f"cannot find {sdsscore_config_file}.")
-            return
-
-        sdsscore_config = yaml.full_load(open(sdsscore_config_file))
-
-        use_location = sdsscore_config.pop("use_location", False)
-
-        if not use_location:
-
-            self.config = merge_config(sdsscore_config, self.config)
-
-        else:
-
-            location_section = sdsscore_config.get(self.location.upper(), None)
-
-            if location_section is None:
-                location_section = sdsscore_config.get(self.location.lower(), None)
-
-            if location_section is None:
-                logging.warn(
-                    f"cannot find section for location "
-                    f"{self.location} in {sdsscore_config_file}."
-                )
-                return
-
-            self.config = merge_config(location_section, self.config)
-
-        logging.warn(
-            f"loaded {self.location} configuration from {sdsscore_config_file}."
-        )
 
     def attachAllCmdSets(self, path=None):
         """
