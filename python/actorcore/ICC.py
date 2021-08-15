@@ -58,11 +58,7 @@ class ICC(actorcore.Actor.Actor):
         """(Re-)load and attach a named set of commands."""
 
         if path is None:
-            path = [
-                os.path.join(
-                    self.product_dir, "python", self.productName, "Controllers"
-                )
-            ]
+            path = [os.path.join(self.product_dir, "Controllers")]
 
         # import pdb; pdb.set_trace()
         self.logger.info("attaching controller %s from path %s", name, path)
