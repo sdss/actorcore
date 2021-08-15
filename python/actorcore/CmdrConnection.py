@@ -3,12 +3,13 @@ import queue
 import sys
 import threading
 
-import opscore.actor.cmdkeydispatcher as opsDispatcher
-import opscore.actor.keyvar as opsKeyvar
-import opscore.actor.model as opsModel
 from twisted.internet import reactor
 from twisted.internet.protocol import ReconnectingClientFactory
 from twisted.protocols.basic import LineReceiver
+
+import opscore.actor.cmdkeydispatcher as opsDispatcher
+import opscore.actor.keyvar as opsKeyvar
+import opscore.actor.model as opsModel
 
 
 def encode(cmdStr):
@@ -20,7 +21,7 @@ class CmdrConnection(LineReceiver):
     def __init__(self, readCallback, brains, logger=None, **argv):
         """The Commander twisted Protocol: sends command lines and passes on replies."""
 
-        self.delimiter = b'\n'
+        self.delimiter = b"\n"
         self.readCallback = readCallback
         self.brains = brains
         self.lock = threading.Lock()
@@ -50,7 +51,7 @@ class CmdrConnection(LineReceiver):
            replyStr   - the new reply line.
         """
 
-        self.logger.debug('read: ' + replyStr.decode())
+        self.logger.debug("read: " + replyStr.decode())
         self.readCallback(self.transport, replyStr)
 
 

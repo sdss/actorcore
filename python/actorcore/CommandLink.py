@@ -5,10 +5,11 @@ import re
 import sys
 import threading
 
-from opscore.utility.qstr import qstr
-from opscore.utility.tback import tback
 from twisted.internet import reactor
 from twisted.protocols.basic import LineReceiver
+
+from opscore.utility.qstr import qstr
+from opscore.utility.tback import tback
 
 from .Command import Command
 
@@ -32,9 +33,8 @@ class CommandLink(LineReceiver):
         re.IGNORECASE | re.VERBOSE,
     )
 
-    def __init__(self, brains, connID, eol=b'\n'):
-        """ Receives what should be atomic commands, parses them, and passes them on.
-        """
+    def __init__(self, brains, connID, eol=b"\n"):
+        """Receives what should be atomic commands, parses them, and passes them on."""
         # LineReceiver.__init__(self) # How can they live without?
 
         self.brains = brains

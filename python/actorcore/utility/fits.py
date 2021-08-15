@@ -6,6 +6,7 @@ import threading
 
 import astropy.io.fits as fits
 import numpy
+
 from opscore.utility.qstr import qstr
 
 

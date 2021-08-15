@@ -25,15 +25,16 @@ import sys
 import threading
 import traceback
 
+import yaml
+from twisted.internet import reactor
+
 import opscore
 import opscore.protocols.keys as keys
 import opscore.protocols.validation as validation
-import yaml
 from opscore.protocols.parser import CommandParser
 from opscore.utility.qstr import qstr
 from opscore.utility.sdss3logging import setConsoleLevel, setupRootLogger
 from opscore.utility.tback import tback
-from twisted.internet import reactor
 
 from actorcore.utility.configuration import merge_config
 
@@ -185,7 +186,8 @@ class Actor(object):
             productName (str): the name of the product; defaults to name
             configFile (str): the full path of the configuration file; defaults
                 to etc/$name.cfg
-            makeCmdrConnection (bool): establish self.cmdr as a command connection to the hub.
+            makeCmdrConnection (bool): establish self.cmdr as a command connection
+                to the hub.
         """
         # Define/save the actor name, the product name, the product_DIR, and the
         # configuration file.
@@ -269,7 +271,8 @@ class Actor(object):
         # Make the root logger go to a rotating file. All others derive from this.
         setupRootLogger(self.logDir)
 
-        # The real stderr/console filtering is actually done through the console Handler.
+        # The real stderr/console filtering is actually done through the
+        # console Handler.
         try:
             consoleLevel = int(self.config["logging"]["consoleLevel"])
         except BaseException:
@@ -477,8 +480,8 @@ class Actor(object):
                 "text=%s"
                 % (
                     qstr(
-                        "completely unexpected exception when processing a new command: %s"
-                        % (e)
+                        "completely unexpected exception when "
+                        "processing a new command: %s" % (e)
                     )
                 )
             )
@@ -753,10 +756,10 @@ class SDSSActor(Actor, metaclass=abc.ABCMeta):
                     queue.Queue(0) if restartQueues else actorState.queues[tid]
                 )
             else:
-                # If queueClass is custom, we assume it comes from SOP, whose queue require to
-                # pass the tname as the first argument.
-                # TODO: this is ugly and has already caused problems. We should find a better
-                # solution.
+                # If queueClass is custom, we assume it comes from SOP,
+                # whose queue require to pass the tname as the first argument.
+                # TODO: this is ugly and has already caused problems. We should find
+                # a better solution.
                 newQueues[tid] = (
                     queueClass(tname, 0) if restartQueues else actorState.queues[tid]
                 )
