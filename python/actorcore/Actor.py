@@ -263,7 +263,7 @@ class Actor(object):
     def configureLogs(self, cmd=None):
         """(re-)configure our logs."""
 
-        self.logDir = self.config["logging"]["logdir"]
+        self.logDir = os.path.expandvars(self.config["logging"]["logdir"])
         assert self.logDir, "logdir must be set!"
 
         # Make the root logger go to a rotating file. All others derive from this.
