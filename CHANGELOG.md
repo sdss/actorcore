@@ -10,16 +10,17 @@
 ### 🔧 Fixed
 
 * Correctly subclass from `Exception` in `ICCExpections.py`.
+* Fixed some regresions in the `ICC` class.
 
 
-## 5.0.2 (2021-08-21)
+## 5.0.2 (2021-08-12)
 
 ### 🔧 Fixed
 
 * Packaging was not including subdirectories in `actorcore`.
 
 
-## 5.0.1 (2021-08-21)
+## 5.0.1 (2021-08-12)
 
 ### ✨ Improved
 
@@ -30,7 +31,7 @@
 * Use bytes for EOF delimiters in Twisted subclasses.
 
 
-## 5.0.0 (2021-08-21)
+## 5.0.0 (2021-08-12)
 
 ### 🚀 New
 
