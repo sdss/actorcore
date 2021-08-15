@@ -35,7 +35,8 @@ class ICC(actorcore.Actor.Actor):
             productName (str): the name of the product; defaults to name
             configFile (str): the full path of the configuration file; defaults
                 to $PRODUCTNAME_DIR/etc/$name.cfg
-            makeCmdrConnection (bool): establish self.cmdr as a command connection to the hub.
+            makeCmdrConnection (bool): establish self.cmdr as a command connection
+                to the hub.
 
         """
 
@@ -87,7 +88,8 @@ class ICC(actorcore.Actor.Actor):
         self.logger.info("creating new %s (%08x)", name, id(mod))
         conn = getattr(mod, name)(self, name)
 
-        # If we loaded the module and the controller is already running, cleanly stop the old one.
+        # If we loaded the module and the controller is already running,
+        #   cleanly stop the old one.
         if name in self.controllers:
             self.logger.info("stopping %s controller", name)
             self.controllers[name].stop()
@@ -104,9 +106,11 @@ class ICC(actorcore.Actor.Actor):
         return True
 
     def attachAllControllers(self, path=None):
-        """(Re-)load and (re-)connect to the hardware controllers listed in config:"icc".controllers."""
+        """(Re-)load and (re-)connect to the hardware controllers listed in
+        config:"icc".controllers.
+        """
 
-        clist = eval(self.config[self.name]["controllers"])
+        clist = self.config[self.name]["controllers"]
         self.logger.info("All controllers = %s", clist)
         for c in clist:
             if c not in self.allControllers:
