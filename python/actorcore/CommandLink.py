@@ -136,7 +136,7 @@ class CommandLink(LineReceiver):
         with self.outputQueueLock:
             while len(self.outputQueue) > 0:
                 e = self.outputQueue.pop(0).encode(sys.getdefaultencoding())
-                cmdLogger.debug("flushing queue line: %s" % (e[:-1]))
+                cmdLogger.debug("flushing queue line: %s" % (e[:-1].decode()))
                 self.transport.write(e)
 
     def sendResponse(self, cmd, flag, response):
