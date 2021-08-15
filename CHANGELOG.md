@@ -1,5 +1,13 @@
 # Changelog
 
+## 5.0.3 (unreleased)
+
+### ✨ Improved
+
+* Run `black` and `isort` in all the code.
+* `logdir` option in actor configuration file now can contain environment variables.
+
+
 ## 5.0.2 (2021-08-21)
 
 ### 🔧 Fixed
