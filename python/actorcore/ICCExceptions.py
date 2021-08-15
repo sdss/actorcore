@@ -1,10 +1,7 @@
-import exceptions
-
-
 __all__ = ["ICCError", "CmdError", "CommError"]
 
 
-class ICCError(exceptions.Exception):
+class ICCError(Exception):
     """A general exception for the ICC.
 
     Anything can throw one, passing a one line error message.
@@ -30,10 +27,10 @@ class ICCError(exceptions.Exception):
             self.args = (error,)
 
 
-class CmdError(exceptions.Exception):
-    """A exception due to commands sent to the ICC. Anything can throw one, passing a one line
-    error message. The top-level event loop will close/cleanup/destroy any running command
-    and return the error message on text.
+class CmdError(Exception):
+    """A exception due to commands sent to the ICC. Anything can throw one, passing a
+    one line error message. The top-level event loop will close/cleanup/destroy any
+    running command and return the error message on text.
     """
 
     def __init__(self, error, details=None):
@@ -53,7 +50,7 @@ class CmdError(exceptions.Exception):
             self.args = (error,)
 
 
-class CommError(exceptions.Exception):
+class CommError(Exception):
     """An exception that specifies that a low-level communication error occurred.
 
     These should only be thrown for serious communications errors.

@@ -7,6 +7,10 @@
 * Run `black` and `isort` in all the code.
 * `logdir` option in actor configuration file now can contain environment variables.
 
+### 🔧 Fixed
+
+* Correctly subclass from `Exception` in `ICCExpections.py`.
+
 
 ## 5.0.2 (2021-08-21)
 
