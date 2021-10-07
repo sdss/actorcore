@@ -1,5 +1,13 @@
 # Changelog
 
+## 5.0.4 (2021-10-07)
+
+### 🔧 Fixed
+
+* Write bytes to the tron connection.
+* Prevent FITS routines crashing if SOP or guider are not present.
+
+
 ## 5.0.3 (2021-09-07)
 
 ### ✨ Improved
