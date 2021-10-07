@@ -39,10 +39,13 @@ class CmdrConnection(LineReceiver):
            cmdstr (str): a Command to send
         """
 
+        if not isinstance(cmdStr, (bytes, bytearray)):
+            cmdStr = encode(cmdStr)
+
         with self.lock:
             # encode, incase we received a unicode string.
-            self.logger.debug("transporting command %s" % (encode(cmdStr)))
-            self.transport.write(encode(cmdStr))
+            self.logger.debug("transporting command %s" % (cmdStr))
+            self.transport.write(cmdStr)
 
     def lineReceived(self, replyStr):
         """Incorporate an entire reply line.
@@ -85,7 +88,9 @@ class CmdrConnector(ReconnectingClientFactory):
 
         self.resetDelay()
         proto = CmdrConnection(
-            self.readCallback, brains=self.brains, logger=self.logger
+            self.readCallback,
+            brains=self.brains,
+            logger=self.logger,
         )
         proto.factory = self
         self.activeConnection = proto
@@ -129,7 +134,7 @@ class CmdrConnector(ReconnectingClientFactory):
         if not self.activeConnection:
             raise RuntimeError("not connected.")
 
-        self.activeConnection.write(encode(cmdStr) + "\n")
+        self.activeConnection.write(cmdStr + "\n")
 
 
 class Cmdr(object):
