@@ -782,28 +782,31 @@ def plateCards(models, cmd):
     except Exception as e:
         plateType = "sop.survey %s: %s" % (type(e).__name__, e)
         surveyMode = plateType
+        survey = "None"
 
     cards = []
-    cards.append(
-        makeCardFromKey(
-            cmd,
-            models["guider"].keyVarDict,
-            "version",
-            "v_guider",
-            comment="version of the current guiderActor",
-            onFail="Unknown",
+    if "guider" in models:
+        cards.append(
+            makeCardFromKey(
+                cmd,
+                models["guider"].keyVarDict,
+                "version",
+                "v_guider",
+                comment="version of the current guiderActor",
+                onFail="Unknown",
+            )
         )
-    )
-    cards.append(
-        makeCardFromKey(
-            cmd,
-            models["sop"].keyVarDict,
-            "version",
-            "v_sop",
-            comment="version of the current sopActor",
-            onFail="Unknown",
+    if "sop" in models:
+        cards.append(
+            makeCardFromKey(
+                cmd,
+                models["sop"].keyVarDict,
+                "version",
+                "v_sop",
+                comment="version of the current sopActor",
+                onFail="Unknown",
+            )
         )
-    )
 
     cards.append(makeCard(cmd, "NAME", name, nameComment))
     cards.append(makeCard(cmd, "PLATEID", plate, "The currently loaded plate"))
