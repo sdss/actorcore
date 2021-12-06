@@ -740,6 +740,98 @@ def tccCards(models, cmd=None):
     return cards
 
 
+def fpsCards(models, cmd):
+    """Return a list of FITS cards describing an FPS configuration."""
+
+    jaeger_key = models["jaeger"].keyVarDict
+
+    cards = []
+
+    cards.append(makeCard(cmd, "CARTID", "FPS-N", "Cart/instrument"))
+
+    cards.append(
+        makeCardFromKey(
+            cmd,
+            jaeger_key,
+            "configuration_loaded",
+            "CONFID",
+            idx=0,
+            comment="FPS configuration",
+            onFail=-999,
+        )
+    )
+
+    cards.append(
+        makeCardFromKey(
+            cmd,
+            jaeger_key,
+            "configuration_loaded",
+            "DESIGNID",
+            idx=1,
+            comment="FPS design",
+            onFail=-999,
+        )
+    )
+
+    cards.append(
+        makeCardFromKey(
+            cmd,
+            jaeger_key,
+            "configuration_loaded",
+            "FIELDID",
+            idx=2,
+            comment="FPS field",
+            onFail=-999,
+        )
+    )
+
+    cards.append(
+        makeCardFromKey(
+            cmd,
+            jaeger_key,
+            "version",
+            "VJAEGER",
+            comment="Version of Jaeger",
+            onFail="Unknown",
+        )
+    )
+
+    cards.append(
+        makeCardFromKey(
+            cmd,
+            jaeger_key,
+            "kaiju_version",
+            "VKAIJU",
+            comment="Version of Kaiju",
+            onFail="Unknown",
+        )
+    )
+
+    cards.append(
+        makeCardFromKey(
+            cmd,
+            jaeger_key,
+            "coordio_version",
+            "VCOORDIO",
+            comment="Version of coordIO",
+            onFail="Unknown",
+        )
+    )
+
+    cards.append(
+        makeCardFromKey(
+            cmd,
+            jaeger_key,
+            "fps_calibrations_version",
+            "VCALIBS",
+            comment="Version of FPS calibrations",
+            onFail="Unknown",
+        )
+    )
+
+    return cards
+
+
 def plateCards(models, cmd):
     """Return a list of fits Cards describing the plate/cartrige/pointing"""
 
@@ -777,8 +869,10 @@ def plateCards(models, cmd):
         name = "0000-00000-00"
 
     try:
-        survey = models["sop"].keyVarDict["survey"]
-        plateType, surveyMode = survey
+        # survey = models["sop"].keyVarDict["survey"]
+        # plateType, surveyMode = survey
+        plateType = "BHM&MWM"
+        surveyMode = "BHM lead"
     except Exception as e:
         plateType = "sop.survey %s: %s" % (type(e).__name__, e)
         surveyMode = plateType
@@ -827,7 +921,7 @@ def plateCards(models, cmd):
     )
 
     # Only include survey mode when it has been specified.
-    if surveyMode is not None and survey != "None":
+    if surveyMode is not None:
         cards.append(
             makeCard(
                 cmd,
