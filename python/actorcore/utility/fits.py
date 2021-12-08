@@ -970,6 +970,9 @@ def _cnvListCard(val, itemCnv=int):
 
 
 def _cnvPVTPosCard(pvt, atTime=None):
+    if isinstance(pvt, tuple):
+        return pvt[0]
+
     try:
         return pvt.getPos()
     except BaseException:
@@ -977,6 +980,9 @@ def _cnvPVTPosCard(pvt, atTime=None):
 
 
 def _cnvPVTVelCard(pvt):
+    if isinstance(pvt, tuple):
+        return pvt[1]
+
     try:
         return pvt.getVel()
     except BaseException:

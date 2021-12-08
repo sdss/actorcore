@@ -1,5 +1,12 @@
 # Changelog
 
+## 5.0.5 (2021-12-08)
+
+### 🔧 Fixed
+
+* In FITS module, check if pvt variable is tuple instead of PVT object.
+
+
 ## 5.0.4 (2021-10-07)
 
 ### 🔧 Fixed
