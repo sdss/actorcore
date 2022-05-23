@@ -31,6 +31,7 @@ extensions = [
     "sphinx.ext.viewcode",
     "sphinx.ext.mathjax",
     "sphinx.ext.intersphinx",
+    "myst_parser",
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -203,12 +204,12 @@ def setup(app):
     """Downloads CAHNGELOG files from tron and opscore."""
 
     urllib.request.urlretrieve(
-        "https://raw.githubusercontent.com/sdss/tron/master/CHANGELOG.rst",
-        "changelog_tron.rst",
+        "https://raw.githubusercontent.com/sdss/tron/main/CHANGELOG.md",
+        "changelog_tron.md",
     )
     urllib.request.urlretrieve(
-        "https://raw.githubusercontent.com/sdss/opscore/master/CHANGELOG.rst",
-        "changelog_opscore.rst",
+        "https://raw.githubusercontent.com/sdss/opscore/main/CHANGELOG.md",
+        "changelog_opscore.md",
     )
     urllib.request.urlretrieve(
         "https://raw.githubusercontent.com/sdss/actorkeys/sdss5/CHANGELOG.rst",

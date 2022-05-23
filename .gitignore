@@ -103,4 +103,6 @@ ENV/
 # mypy
 .mypy_cache/
 
-docs/sphinx/changelog_*
+docs/sphinx/changelog_actorkeys.rst
+docs/sphinx/changelog_opscore.md
+docs/sphinx/changelog_tron.md

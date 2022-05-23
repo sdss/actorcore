@@ -25,10 +25,10 @@ Changelogs
 .. toctree::
   :maxdepth: 2
 
-  actorcore Changelog <changelog>
-  opscore Changelog <changelog_opscore>
-  actorkeys Changelog <changelog_actorkeys>
-  tron Changelog <changelog_tron>
+  actorcore changelog <changelog>
+  opscore changelog <changelog_opscore>
+  actorkeys changelog <changelog_actorkeys>
+  tron changelog <changelog_tron>
 
 
 
