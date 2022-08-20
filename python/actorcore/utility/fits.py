@@ -180,7 +180,7 @@ def lcoTCCCards(models, cmd=None):
 
     cards = []
 
-    tccDict = models["tcc"].keyVarDict
+    tccDict = models["lcotcc"].keyVarDict
 
     try:
         objSys = tccDict["objSys"]
