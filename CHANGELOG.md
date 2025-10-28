@@ -5,6 +5,7 @@
 ### ⚙️ Engineering
 
 * Replace use of deprecated `imp` with `importlib`.
+* Require Python 3.9 or higher.
 
 
 ## 5.0.5 (2021-12-08)
