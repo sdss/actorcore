@@ -5,7 +5,7 @@ An ICC is a specialized actor with a controller that interfaces with a given
 instrument.
 """
 
-import imp
+import importlib.util
 import logging
 import os
 import sys
@@ -63,26 +63,36 @@ class ICC(actorcore.Actor.Actor):
 
         # import pdb; pdb.set_trace()
         self.logger.info("attaching controller %s from path %s", name, path)
-        file = None
         try:
-            file, filename, description = imp.find_module(name, path)
+            # Search for the module in the given path
+            spec = None
+            for p in path:
+                module_file = os.path.join(p, name + ".py")
+                if os.path.exists(module_file):
+                    spec = importlib.util.spec_from_file_location(name, module_file)
+                    break
+
+            if spec is None:
+                raise ImportError(f"No module named '{name}' in path {path}")
+
             self.logger.debug(
-                "controller file=%s filename=%s from path %s", file, filename, path
+                "controller spec.name=%s spec.origin=%s from path %s",
+                spec.name,
+                spec.origin,
+                path,
             )
-            mod = imp.load_module(name, file, filename, description)
+
+            mod = importlib.util.module_from_spec(spec)
+            sys.modules[name] = mod
+            spec.loader.exec_module(mod)
+
             self.logger.debug(
-                "load_module(%s, %s, %s, %s) = %08x",
+                "load_module(%s) = %08x",
                 name,
-                file,
-                filename,
-                description,
                 id(mod),
             )
         except ImportError as e:
             raise RuntimeError("Import of %s failed: %s" % (name, e))
-        finally:
-            if file:
-                file.close()
 
         # Instantiate and save a new controller.
         self.logger.info("creating new %s (%08x)", name, id(mod))

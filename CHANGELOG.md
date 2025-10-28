@@ -1,5 +1,12 @@
 # Changelog
 
+## Next release
+
+### ⚙️ Engineering
+
+* Replace use of deprecated `imp` with `importlib`.
+
+
 ## 5.0.5 (2021-12-08)
 
 ### 🔧 Fixed

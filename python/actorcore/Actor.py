@@ -13,8 +13,8 @@ a twisted reactor, depending on the value of runInReactorThread.
 """
 
 import abc
-import imp
 import importlib
+import importlib.util
 import inspect
 import logging
 import os
@@ -25,8 +25,6 @@ import sys
 import threading
 import traceback
 
-from twisted.internet import reactor
-
 import opscore
 import opscore.protocols.keys as keys
 import opscore.protocols.validation as validation
@@ -35,6 +33,7 @@ from opscore.utility.qstr import qstr
 from opscore.utility.sdss3logging import setConsoleLevel, setupRootLogger
 from opscore.utility.tback import tback
 from sdsstools import read_yaml_file
+from twisted.internet import reactor
 
 from . import CmdrConnection
 from . import Command as actorCmd
@@ -92,14 +91,7 @@ class ModLoader(object):
     def load_module(self, fullpath, name):
         """Try to load a named module in the given path.
 
-        The imp.find_module() docs give the following boring prescription:
-
-          'This function does not handle hierarchical module names
-          (names containing dots). In order to find P.M, that is,
-          submodule M of package P, use find_module() and
-          load_module() to find and load package P, and then use
-          find_module() with the path argument set to P.__path__. When
-          P itself has a dotted name, apply this recipe recursively.'
+        Uses importlib to load modules dynamically.
         """
 
         self.icclog.info("trying to load module path=%s name=%s", fullpath, name)
@@ -108,40 +100,68 @@ class ModLoader(object):
         path = None
         while len(parts) > 1:
             pname = parts[0]
-            try:
-                self.icclog.debug("pre-loading path=%s pname=%s", path, pname)
-                file, filename, description = imp.find_module(pname, path)
+            self.icclog.debug("pre-loading path=%s pname=%s", path, pname)
 
-                self.icclog.debug(
-                    "pre-loading package file=%s filename=%s description=%s",
-                    file,
-                    filename,
-                    description,
+            # Find module spec
+            if path is None:
+                spec = importlib.util.find_spec(pname)
+            else:
+                # For submodules, construct the full module name
+                idx = fullpath.split(".").index(pname)
+                parent_parts = fullpath.split(".")[: idx + 1]
+                spec = importlib.util.find_spec(
+                    pname,
+                    package=".".join(parent_parts[:-1])
+                    if len(parent_parts) > 1
+                    else None,
                 )
-                mod = imp.load_module(pname, file, filename, description)
-                path = mod.__path__
-                parts = parts[1:]
-            except ImportError:
-                raise
-            finally:
-                file.close()
 
-        try:
-            self.icclog.debug("trying to find path=%s class=%s", path, name)
-            file, filename, description = imp.find_module(name, path)
+            if spec is None:
+                raise ImportError(f"No module named '{pname}'")
 
             self.icclog.debug(
-                "trying to attach file=%s filename=%s description=%s",
-                file,
-                filename,
-                description,
+                "pre-loading package spec.name=%s spec.origin=%s",
+                spec.name,
+                spec.origin,
             )
-            mod = imp.load_module(name, file, filename, description)
-            return mod
-        except ImportError as e:
-            raise e
-        finally:
-            file.close()
+
+            # Load the module
+            mod = importlib.util.module_from_spec(spec)
+            sys.modules[spec.name] = mod
+            spec.loader.exec_module(mod)
+
+            if hasattr(mod, "__path__"):
+                path = mod.__path__
+            parts = parts[1:]
+
+        self.icclog.debug("trying to find path=%s class=%s", path, name)
+
+        # Find and load the final module
+        if path is None:
+            spec = importlib.util.find_spec(name)
+        else:
+            # Search in the given path
+            for p in path:
+                module_file = os.path.join(p, name + ".py")
+                if os.path.exists(module_file):
+                    spec = importlib.util.spec_from_file_location(name, module_file)
+                    break
+            else:
+                raise ImportError(f"No module named '{name}' in path {path}")
+
+        if spec is None:
+            raise ImportError(f"No module named '{name}'")
+
+        self.icclog.debug(
+            "trying to attach spec.name=%s spec.origin=%s",
+            spec.name,
+            spec.origin,
+        )
+
+        mod = importlib.util.module_from_spec(spec)
+        sys.modules[spec.name] = mod
+        spec.loader.exec_module(mod)
+        return mod
 
 
 class ActorState(object):
@@ -357,18 +377,30 @@ class Actor(object):
 
         self.logger.info("attaching command set %s from path %s", cname, path)
 
-        file = None
         try:
-            file, filename, description = imp.find_module(cname, path)
+            # Search for the module in the given path
+            spec = None
+            for p in path:
+                module_file = os.path.join(p, cname + ".py")
+                if os.path.exists(module_file):
+                    spec = importlib.util.spec_from_file_location(cname, module_file)
+                    break
+
+            if spec is None:
+                raise ImportError(f"No module named '{cname}' in path {path}")
+
             self.logger.debug(
-                "command set file=%s filename=%s from path %s", file, filename, path
+                "command set spec.name=%s spec.origin=%s from path %s",
+                spec.name,
+                spec.origin,
+                path,
             )
-            mod = imp.load_module(cname, file, filename, description)
+
+            mod = importlib.util.module_from_spec(spec)
+            sys.modules[cname] = mod
+            spec.loader.exec_module(mod)
         except ImportError as e:
             raise RuntimeError("Import of %s failed: %s" % (cname, e))
-        finally:
-            if file:
-                file.close()
 
         # Instantiate and save a new command handler.
         cmdSet = getattr(mod, cname)(self)
@@ -703,7 +735,6 @@ class SDSSActor(Actor, metaclass=abc.ABCMeta):
         newQueues = {}
         threadsToStart = []
         for tname, tid, thread in self.threadList:
-
             if queueClass is None or queueClass is queue.Queue:
                 newQueues[tid] = (
                     queue.Queue(0) if restartQueues else actorState.queues[tid]
